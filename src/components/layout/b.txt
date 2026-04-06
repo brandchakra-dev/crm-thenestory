@@ -1,0 +1,484 @@
+import React, { useState, useEffect, useContext } from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import AuthContext from "../../context/AuthContext";
+
+import { FaCalendarCheck } from "react-icons/fa";
+
+export default function Sidebar() {
+  const { user } = useContext(AuthContext);
+  const [openMenus, setOpenMenus] = useState({});
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const location = useLocation();
+
+  // Auto-close mobile sidebar on route change
+  useEffect(() => {
+    if (isMobileOpen) {
+      closeMobileSidebar();
+    }
+  }, [location]);
+
+  // Mobile menu event listener
+  useEffect(() => {
+    const handleMobileMenuToggle = (event) => setIsMobileOpen(event.detail);
+    window.addEventListener("mobileMenuToggle", handleMobileMenuToggle);
+    return () => window.removeEventListener("mobileMenuToggle", handleMobileMenuToggle);
+  }, []);
+
+  const toggleMenu = (menu) => {
+    setOpenMenus(prev => ({ 
+      ...prev, 
+      [menu]: !prev[menu] 
+    }));
+  };
+
+  const closeMobileSidebar = () => {
+    setIsMobileOpen(false);
+    document.body.style.overflow = "";
+    window.dispatchEvent(new CustomEvent("mobileMenuToggle", { detail: false }));
+  };
+
+  // Role-based access control
+  const menuVisibility = {
+    superadmin: ["dashboard", "leads", "users","projects", "attendance", "communications", "settings","activity"],
+    admin: ["dashboard", "leads", "users","projects", "attendance", "communications","activity"],
+    manager: ["dashboard", "leads","users","projects", "attendance","followup"],
+    executive: ["dashboard", "leads","projects","attendance","followup"],
+  };
+
+  const hasAccess = (menuId) => menuVisibility[user?.role]?.includes(menuId);
+
+  // -----------------------------------------------
+  // VALID HEROICON SVGs (no broken paths)
+  // -----------------------------------------------
+  const icons = {
+    dashboard: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 12l9-9 9 9M5 10v10h14V10" />
+      </svg>
+    ),
+    leads: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 21v-2a4 4 0 00-8 0v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    ),
+    users: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 20v-2a4 4 0 00-3-3.87M9 12a4 4 0 110-8 4 4 0 010 8z" />
+      </svg>
+    ),
+    projects: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 21h18" />
+      <path d="M5 21V7l7-4 7 4v14" />
+      <path d="M9 21v-6h6v6" />
+    </svg>
+    ),
+    attendance: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 7V3M16 7V3M3 11h18M5 19h14a2 2 0 002-2V7H3v10a2 2 0 002 2z" />
+      </svg>
+    ),
+    communications: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+      </svg>
+    ),
+    settings: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 15a3 3 0 110-6 3 3 0 010 6z" />
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 005 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 005 9a1.65 1.65 0 00-.33-1.82l-.06-.06A2 2 0 017.44 4.3l.06.06A1.65 1.65 0 009.32 5a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09A1.65 1.65 0 0015 5a1.65 1.65 0 001.82-.33l.06-.06A2 2 0 0120.7 7.44l-.06.06A1.65 1.65 0 0019.4 9c.5.46.6 1.2.6 1.5s-.1 1.04-.6 1.5z" />
+      </svg>
+    ),
+    
+    activity: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20V10" />
+        <path d="M18 20V4" />
+        <path d="M6 20v-4" />
+      </svg>
+    ),
+
+    followup: (
+      <FaCalendarCheck />
+    ),
+
+  };
+
+  // Menu configuration
+  const menuItems = [
+    {
+      id: "dashboard",
+      to: "/dashboard",
+      label: "Dashboard",
+      icon: icons.dashboard
+    },
+    {
+      id: "leads",
+      label: "Leads Management",
+      icon: icons.leads,
+      isMenu: true,
+      submenu: [
+        { to: "/leads", label: "All Leads" },
+        { to: "/leads/create", label: "Create Lead", roles: ["superadmin", "admin"] },
+        { to: "/leads/import", label: "Import Leads", roles: ["superadmin", "admin"] },
+      ],
+    },
+    {
+      id: "users",
+      label: "Teams Management",
+      icon: icons.users,
+      isMenu: true,
+      submenu: [
+        { to: "/users", label: "Users" },
+        { to: "/users/create", label: "Add User", roles: ["superadmin", "admin"] },
+      ],
+    },
+    {
+      id: "projects",
+      label: "Projects Mgt.",
+      icon: icons.projects,
+      isMenu: true,
+      submenu: [
+        { to: "/project", label: "Projects", roles: ["superadmin", "admin", "executive", "manager"] },
+        { to: "/project/create", label: "Add Projects", roles: ["superadmin", "admin"] },  
+      ],
+    },
+    {
+      id: "attendance",
+      label: "Attendance Mgt.",
+      icon: icons.attendance,
+      isMenu: true,
+      submenu: [
+        { to: "/attendance/", label: "My Attendance", roles: ["executive", "manager"] },
+        { to: "/attendance/team", label: "Team Attendance", roles: ["manager"] },
+        { to: "/attendance/all", label: "All Attendance", roles: ["superadmin", "admin"] },
+      ],
+    },
+    {
+      id: "communications",
+      to: "/communications",
+      label: "Communications",
+      icon: icons.communications
+    },
+    {
+      id: "settings",
+      to: "/settings",
+      label: "Settings",
+      icon: icons.settings
+    },
+    {
+      id: "activity",
+      to: "/activity",
+      label: "All Activity",
+      icon: icons.activity
+    },
+    {
+      id: "followup",
+      to: "/follow-up",
+      label: "Follow up",
+      icon: icons.followup
+    },
+  ];
+
+  return (
+    <>
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={closeMobileSidebar}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div
+        className={`fixed lg:static inset-y-0 left-0 z-50
+          w-64 bg-white shadow-xl border-r border-gray-200 
+          transform transition-transform duration-300 ease-in-out
+          flex flex-col h-screen
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+      >
+        
+        {/* Logo Section */}
+        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+              <span className="text-white font-bold text-xl">N</span>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">The Nestory</h1>
+              <p className="text-sm opacity-90">Lead Management</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {menuItems.filter(item => hasAccess(item.id)).map((item) => (
+            <div key={item.id} className="space-y-1">
+              {item.isMenu ? (
+                <div className="space-y-1">
+                  <button
+                    onClick={() => toggleMenu(item.id)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200
+                      ${openMenus[item.id] 
+                        ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </div>
+                    <svg 
+                      className={`w-4 h-4 transition-transform duration-200 
+                        ${openMenus[item.id] ? 'rotate-180' : ''}`}
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {openMenus[item.id] && (
+                    <div className="ml-4 space-y-1 border-l-2 border-gray-200 pl-4">
+                      {item.submenu
+                        .filter(sub => !sub.roles || sub.roles.includes(user?.role))
+                        .map((sub) => (
+                          <NavLink
+                            key={sub.to}
+                            to={sub.to}
+                            className={({ isActive }) => 
+                              `block px-4 py-2 text-sm rounded-lg transition-all duration-200
+                              ${isActive 
+                                ? 'bg-blue-100 text-blue-700 font-medium' 
+                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                              }`
+                            }
+                          >
+                            {sub.label}
+                          </NavLink>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <NavLink
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200
+                    ${isActive 
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`
+                  }
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </NavLink>
+              )}
+            </div>
+          ))}
+        </nav>
+
+        {/* User Info Footer */}
+        <div className="p-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-medium text-sm">
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'User'}</p>
+              <p className="text-xs text-gray-500 capitalize">{user?.role || 'User'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+
+
+
+
+import React, { useContext, useState, useEffect } from 'react';
+import AuthContext from '../../context/AuthContext';
+
+export default function Navbar() {
+  const { user, logout } = useContext(AuthContext);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Toggle mobile sidebar
+  const handleMobileMenuToggle = () => {
+    const newState = !isMobileMenuOpen;
+    setIsMobileMenuOpen(newState);
+    
+    // Dispatch custom event to communicate with Sidebar
+    const event = new CustomEvent('mobileMenuToggle', { detail: newState });
+    window.dispatchEvent(event);
+    
+    // Toggle body scroll
+    if (newState) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  };
+
+  // Close mobile menu when clicking on overlay
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+    document.body.style.overflow = '';
+    const event = new CustomEvent('mobileMenuToggle', { detail: false });
+    window.dispatchEvent(event);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isDropdownOpen && !event.target.closest('.user-dropdown')) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+  return (
+    <>
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Left section - Logo and mobile menu */}
+            <div className="flex items-center">
+              {/* Mobile menu button */}
+              <button 
+                onClick={handleMobileMenuToggle}
+                className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 lg:hidden"
+                aria-label="Toggle menu"
+              >
+                {isMobileMenuOpen ? (
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+              
+              {/* Logo */}
+              {/* <div className="ml-2 lg:ml-0">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">N</span>
+                  </div>
+                  <div className="hidden sm:block">
+                    <h1 className="text-lg font-bold text-gray-900">The Nestory</h1>
+                    <p className="text-xs text-gray-500">Lead management</p>
+                  </div>
+                </div>
+              </div> */}
+            </div>
+
+            {/* Right section - User menu */}
+            <div className="flex items-center space-x-4">
+              {/* Notifications */}
+              <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors duration-200">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM10.24 8.56a5.97 5.97 0 01-2.24-.56 6 6 0 013.33-10.56 6 6 0 015.11 3.06 6 6 0 013.34 10.55 5.98 5.98 0 01-2.24.56 2 2 0 00-2 2v1a2 2 0 002 2h4a2 2 0 002-2v-1a2 2 0 00-2-2z" />
+                </svg>
+                <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                  3
+                </span>
+              </button>
+
+              {/* User dropdown */}
+              <div className="relative user-dropdown">
+                <button 
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center space-x-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full p-1"
+                >
+                  <div className="flex items-center space-x-2">
+                    <div className="text-right hidden sm:block">
+                      <p className="font-medium text-gray-900">{user?.name}</p>
+                      <p className="text-xs text-gray-500">{user?.role || 'Administrator'}</p>
+                    </div>
+                    <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-medium text-sm">
+                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </span>
+                    </div>
+                  </div>
+                  <svg 
+                    className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Dropdown menu */}
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                    <a href="/profile" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <svg className="h-4 w-4 mr-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Profile
+                    </a>
+                    <a href="/settings" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <svg className="h-4 w-4 mr-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Settings
+                    </a>
+                    <div className="border-t border-gray-200 my-1"></div>
+                    <button 
+                      onClick={logout}
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    >
+                      <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-opacity-50 z-30 lg:hidden"
+          onClick={closeMobileMenu}
+        />
+      )}
+    </>
+  );
+}
