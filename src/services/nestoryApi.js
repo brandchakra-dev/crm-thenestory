@@ -31,7 +31,18 @@ export const projectsApi = {
   floorPlanUrl:   (id, idx)   => `/api/projects/${id}/floorplan/${idx}`,
 };
 
-// ✅ FIXED: Added params support
+export const propertiesApi = {
+  list:           (params = {}) => api.get("/properties", { params }),
+  get:            (id)          => api.get(`/properties/${id}`),
+  create:         (fd)          => api.post("/properties", fd),
+  update:         (id, fd)      => api.put(`/properties/${id}`, fd),
+  remove:         (id)          => api.delete(`/properties/${id}`),
+  removeImage:    (id, imgId)   => api.delete(`/properties/${id}/image/${imgId}`),
+  toggleFeatured: (id)          => api.patch(`/properties/${id}/toggle-featured`),
+  toggleVerify:   (id)          => api.patch(`/properties/${id}/toggle-verify`),
+  imageUrl:       (id, imgId)   => `/api/properties/${id}/image/${imgId}`,
+};
+
 export const citiesApi = {
   list:     (params = {}) => api.get("/cities", { params }),  // ← FIXED
   get:      (id)          => api.get(`/cities/${id}`),
@@ -42,7 +53,6 @@ export const citiesApi = {
   imageUrl: (id)          => `/api/cities/${id}/image`,
 };
 
-// ✅ FIXED: Added params support
 export const buildersApi = {
   list:     (params = {}) => api.get("/builders", { params }),  // ← FIXED
   get:      (id)          => api.get(`/builders/${id}`),
@@ -70,7 +80,8 @@ export const blogsApi = {
   update:   (id, fd)      => api.put(`/blogs/${id}`, fd),
   remove:   (id)          => api.delete(`/blogs/${id}`),
   publish:  (id)          => api.patch(`/blogs/${id}/publish`),
-  toggleFeatured: (id)    => api.patch(`/blogs/${id}/toggle-featured`),
+  toggleFeatured: (id)    => api.patch(`/blogs/${id}/toggle-featured`),  // ✅ Add this
+  removeCover: (id)       => api.delete(`/blogs/${id}/cover`),  // ✅ Add this
   coverUrl: (id)          => `/api/blogs/${id}/cover`,
 };
 

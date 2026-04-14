@@ -19,8 +19,6 @@ import {
 } from "react-icons/fa";
 import { fetchUsers, deleteUser } from "../../api/userService";
 import Button from "../../components/ui/Button";
-import Modal from "../../components/ui/Modal";
-import UserForm from "../../components/forms/UserForm";
 
 export default function UserList() {
   const navigate = useNavigate();
@@ -30,18 +28,16 @@ export default function UserList() {
   const [filterText, setFilterText] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [openCreate, setOpenCreate] = useState(false);
-  const [openEdit, setOpenEdit] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   
   const loadUsers = async () => {
     try {
       setLoading(true);
-      // Fetch all users without role filter to get complete list
       const data = await fetchUsers();  
-      setUsers(data);
+      const usersArray = data.users || data || [];
+      setUsers(usersArray);
+      console.log('user', usersArray)
     } catch (error) {
       console.error("Error loading users:", error);
       alert("Failed to load users");
@@ -67,15 +63,9 @@ export default function UserList() {
       filtered = users.filter(u => u.role !== "superadmin");
     }
     // Manager can only see executives
-    // else if (currentUser.role === "manager") {
-    //   filtered = users.filter(u => u.role === "executive");
-    // }
     else if (currentUser.role === "manager") {
-      filtered = users.filter(
-        u => u.role === "executive" && u.assignedManager?._id === currentUser.id
-      );
+      filtered = users.filter(u => u.role === "executive");
     }
-    
     // Executive can't see any users in management
     else {
       filtered = [];
@@ -99,7 +89,6 @@ export default function UserList() {
   const deleteHandler = async (id) => {
     const userToDelete = users.find(u => u._id === id);
     
-    // Permission checks
     if (userToDelete.role === "superadmin") {
       return alert("Cannot delete superadmin user");
     }
@@ -128,7 +117,6 @@ export default function UserList() {
     
     const usersToDelete = users.filter(u => selectedUsers.includes(u._id));
     
-    // Check permissions for all selected users
     for (const user of usersToDelete) {
       if (user.role === "superadmin") {
         return alert("Cannot delete superadmin user");
@@ -211,7 +199,7 @@ export default function UserList() {
       name: "Phone",
       selector: (r) => r.phone,
       cell: (row) => (
-        <div className="text-gray-900 font-medium px-4 gap-0 min-w-[250px]">{row.phone || "—"}</div>
+        <div className="text-gray-900 font-medium px-4">{row.phone || "—"}</div>
       ),
     },
     {
@@ -256,27 +244,28 @@ export default function UserList() {
     {
       name: "Actions",
       cell: (row) => {
-        // Check permissions for actions
-          const canEdit =
+        const canEdit =
           currentUser.role === "superadmin" ||
-          (currentUser.role === "admin" && row.role !== "superadmin");
-      
+          (currentUser.role === "admin" && row.role !== "superadmin") ||
+          (currentUser.role === "manager" && row.role === "executive");
 
-          const canDelete =
-          currentUser.id !== row._id &&
+        const canDelete =
+          currentUser._id !== row._id &&
           (
             currentUser.role === "superadmin" ||
-            (currentUser.role === "admin" && row.role !== "superadmin" && row.role !== "admin")
+            (currentUser.role === "admin" && row.role !== "superadmin" && row.role !== "admin") ||
+            (currentUser.role === "manager" && row.role === "executive")
           );
 
         return (
           <div className="flex gap-1">       
-          <button
-            onClick={() => navigate(`/users/${row._id}`)}
-            className="text-blue-600"
-          >
-            <FaEye />
-          </button>
+            <button
+              onClick={() => navigate(`/users/${row._id}`)}
+              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition duration-200"
+              title="View Details"
+            >
+              <FaEye size={14} />
+            </button>
             <button
               onClick={() => { navigate(`/users/edit/${row._id}`) }}
               disabled={!canEdit}
@@ -307,19 +296,17 @@ export default function UserList() {
     },
   ];
 
-  // Check if current user can create users
   const canCreateUser = 
     currentUser.role === "superadmin" || 
     currentUser.role === "admin" || 
     currentUser.role === "manager";
 
-  // Get available roles for current user
   const getAvailableRoles = () => {
     const allRoles = [
-      { value: "superadmin", label: "Super Admin", icon: <FaUserShield /> },
-      { value: "admin", label: "Admin", icon: <FaUserCog /> },
-      { value: "manager", label: "Manager", icon: <FaUserTie /> },
-      { value: "executive", label: "Executive", icon: <FaUser /> },
+      { value: "superadmin", label: "Super Admin" },
+      { value: "admin", label: "Admin" },
+      { value: "manager", label: "Manager" },
+      { value: "executive", label: "Executive" },
     ];
 
     if (currentUser.role === "superadmin") return allRoles;
@@ -360,7 +347,7 @@ export default function UserList() {
                 <Button
                   onClick={() => { navigate("/users/create") }}
                   variant="primary"
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-700"
+                  className="flex items-center gap-2"
                 >
                   <FaPlus />
                   Add New User
@@ -369,105 +356,42 @@ export default function UserList() {
             </div>
           </div>
 
-          {/* Stats Cards - Responsive */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mb-6">
-            {/* Total Users */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
+            <div className="bg-white rounded-xl shadow-sm border p-3 sm:p-4">
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-1 sm:p-2 bg-blue-100 rounded-lg sm:rounded-xl">
+                <div className="p-1 sm:p-2 bg-blue-100 rounded-lg">
                   <FaUser className="text-blue-600 text-sm sm:text-base" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm text-gray-600 truncate">Total Users</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">{users.length}</p>
+                <div>
+                  <p className="text-xs sm:text-sm text-gray-600">Total Users</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{users.length}</p>
                 </div>
               </div>
-            </div>
-            
-            {/* Super Admins */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
+            </div>     
+   
+            <div className="bg-white rounded-xl shadow-sm border p-3 sm:p-4">
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-1 sm:p-2 bg-purple-100 rounded-lg sm:rounded-xl">
-                  <FaUserShield className="text-purple-600 text-sm sm:text-base" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm text-gray-600 truncate">Super Admins</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600 truncate">
-                    {users.filter(u => u.role === 'superadmin').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Admins */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-1 sm:p-2 bg-blue-100 rounded-lg sm:rounded-xl">
-                  <FaUserCog className="text-blue-600 text-sm sm:text-base" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm text-gray-600 truncate">Admins</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 truncate">
-                    {users.filter(u => u.role === 'admin').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Managers */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-1 sm:p-2 bg-green-100 rounded-lg sm:rounded-xl">
-                  <FaUserTie className="text-green-600 text-sm sm:text-base" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm text-gray-600 truncate">Managers</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 truncate">
-                    {users.filter(u => u.role === 'manager').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Executives */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-1 sm:p-2 bg-orange-100 rounded-lg sm:rounded-xl">
-                  <FaUser className="text-orange-600 text-sm sm:text-base" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm text-gray-600 truncate">Executives</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600 truncate">
-                    {users.filter(u => u.role === 'executive').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Active Users */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-1 sm:p-2 bg-emerald-100 rounded-lg sm:rounded-xl">
+                <div className="p-1 sm:p-2 bg-emerald-100 rounded-lg">
                   <FaCheckCircle className="text-emerald-600 text-sm sm:text-base" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm text-gray-600 truncate">Active</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-600 truncate">
+                <div>
+                  <p className="text-xs sm:text-sm text-gray-600">Active</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-600">
                     {users.filter(u => u.isActive).length}
                   </p>
                 </div>
               </div>
             </div>
             
-            {/* Inactive Users */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
+            <div className="bg-white rounded-xl shadow-sm border p-3 sm:p-4">
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-1 sm:p-2 bg-gray-100 rounded-lg sm:rounded-xl">
+                <div className="p-1 sm:p-2 bg-gray-100 rounded-lg">
                   <FaTimesCircle className="text-gray-600 text-sm sm:text-base" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm text-gray-600 truncate">Inactive</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-600 truncate">
+                <div>
+                  <p className="text-xs sm:text-sm text-gray-600">Inactive</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-600">
                     {users.filter(u => !u.isActive).length}
                   </p>
                 </div>
@@ -477,13 +401,11 @@ export default function UserList() {
         </div>
 
         {/* Main Content Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-xl border overflow-hidden">
           
           {/* Toolbar */}
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              
-              {/* Search and Basic Filters */}
               <div className="flex flex-col sm:flex-row gap-3 flex-1">
                 <div className="relative flex-1 max-w-md">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -492,7 +414,7 @@ export default function UserList() {
                   <input
                     type="text"
                     placeholder="Search users by name, email, or phone..."
-                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={filterText}
                     onChange={(e) => setFilterText(e.target.value)}
                   />
@@ -523,14 +445,14 @@ export default function UserList() {
 
             {/* Advanced Filters */}
             {showFilters && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="mt-4 p-4 bg-gray-50 rounded-xl border">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Role
                     </label>
                     <select
-                      className="w-full border border-gray-300 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                      className="w-full border border-gray-300 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       value={roleFilter}
                       onChange={(e) => setRoleFilter(e.target.value)}
                     >
@@ -548,7 +470,7 @@ export default function UserList() {
                       Status
                     </label>
                     <select
-                      className="w-full border border-gray-300 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                      className="w-full border border-gray-300 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
                     >
@@ -603,7 +525,7 @@ export default function UserList() {
                       </p>
                       {canCreateUser && (
                         <Button
-                        onClick={() => { navigate("/users/create") }}
+                          onClick={() => { navigate("/users/create") }}
                           variant="primary"
                           className="flex items-center gap-2 mx-auto"
                         >
@@ -618,7 +540,6 @@ export default function UserList() {
             )}
           </div>
         </div>
-
       </div>
     </div>
   );

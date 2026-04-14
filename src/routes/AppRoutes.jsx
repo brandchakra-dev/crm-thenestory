@@ -19,6 +19,11 @@ import ProjectCreate from '../pages/Projects/ProjectCreate';
 import ProjectEdit from '../pages/Projects/ProjectEdit';
 import ProjectShow from '../pages/Projects/ProjectShow';
 
+import PropertiesList from "../pages/Properties/PropertyList";
+import PropertyCreate from "../pages/Properties/PropertyCreate";
+import PropertyEdit from "../pages/Properties/PropertyEdit";
+import PropertyShow from "../pages/Properties/PropertyShow";
+
 // ── CITIES ──
 import CityList from '../pages/Cities/CityList';
 import CityCreate from '../pages/Cities/CityCreate';
@@ -161,6 +166,33 @@ export default function AuthRoutes() {
           <Layout><ProjectShow /></Layout>
         </RoleRoute>
       }/>
+
+      {/* properties */}
+
+      <Route path="/properties" element={
+         <RoleRoute roles={NestoryRoles}>
+         <Layout><PropertiesList /></Layout>
+         </RoleRoute>     
+      } />
+
+      <Route path="/properties/add" element={
+         <RoleRoute roles={NestoryRoles}>
+         <Layout><PropertyCreate /></Layout>
+         </RoleRoute>
+        
+      } />
+      <Route path="/properties/edit/:id" element={
+         
+         <RoleRoute roles={NestoryRoles}>
+         <Layout><PropertyEdit /></Layout>
+         </RoleRoute>
+      } />
+      <Route path="/properties/:id" element={
+          <RoleRoute roles={NestoryRoles}>
+          <Layout><PropertyShow /></Layout>
+          </RoleRoute>
+        
+      } />
 
       {/* ═══════════════════════════════════════════════════
           NESTORY CMS - CITIES

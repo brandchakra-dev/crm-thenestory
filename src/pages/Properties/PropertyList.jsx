@@ -1,17 +1,49 @@
-// src/pages/Nestory/Projects/NestoryProjectsList.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { projectsApi } from "../../services/nestoryApi";
-import { CLS, statusBadge } from "../../utils/nestoryTheme";
+import { propertiesApi } from "../../services/nestoryApi";
+import { CLS } from "../../utils/nestoryTheme";
 import { DeleteModal, useToast } from "../../components/nestory/index";
 import {
-  MdAdd, MdEdit, MdDelete, MdRefresh,
-  MdSearch, MdVisibility, MdImage, MdApartment,
+  MdAdd, MdEdit, MdDelete, MdRefresh, MdSearch, MdVisibility,
   MdCheckCircle, MdCancel, MdFilterList, MdStar, MdStarBorder,
-  MdChevronLeft, MdChevronRight,
+  MdChevronLeft, MdChevronRight, MdHome, MdAttachMoney,
+  MdLocationOn, MdCategory, MdBusiness, MdApartment
 } from "react-icons/md";
 
-export default function ProjectList() {
+// Constants for filters
+const CATEGORY_OPTIONS = [
+  { value: "", label: "All Categories" },
+  { value: "residential", label: "Residential" },
+  { value: "commercial", label: "Commercial" },
+  { value: "industrial", label: "Industrial" },
+];
+
+const LISTING_TYPE_OPTIONS = [
+  { value: "", label: "All Types" },
+  { value: "sale", label: "For Sale" },
+  { value: "rent", label: "For Rent" },
+  { value: "lease", label: "For Lease" },
+];
+
+const getListingBadge = (type) => {
+  switch(type) {
+    case "sale": return CLS.badgeGreen;
+    case "rent": return CLS.badgeBlue;
+    case "lease": return CLS.badgeAmber;
+    default: return CLS.badgeGray;
+  }
+};
+
+const getListingLabel = (type) => {
+  switch(type) {
+    case "sale": return "Sale";
+    case "rent": return "Rent";
+    case "lease": return "Lease";
+    default: return type;
+  }
+};
+
+export default function PropertiesList() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -21,16 +53,17 @@ export default function ProjectList() {
   const [delId, setDelId] = useState(null);
   const [delTitle, setDelTitle] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [listingTypeFilter, setListingTypeFilter] = useState("");
   
-  // ✅ Pagination State
+  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage] = useState(10);
 
-  // Load projects with filters & pagination
-  const loadProjects = useCallback(async () => {
+  // Load properties with filters & pagination
+  const loadProperties = useCallback(async () => {
     setLoading(true);
     try {
       const params = {
@@ -38,40 +71,39 @@ export default function ProjectList() {
         limit: itemsPerPage,
       };
       if (search) params.search = search;
-      if (statusFilter !== "all") params.status = statusFilter;
+      if (categoryFilter) params.category = categoryFilter;
+      if (listingTypeFilter) params.listingType = listingTypeFilter;
       
-      const response = await projectsApi.list(params);
+      const response = await propertiesApi.list(params);
       
-      let projectsData = [];
-      if (response.data?.projects) projectsData = response.data.projects;
-      else if (response.data?.data) projectsData = response.data.data;
-      else if (Array.isArray(response.data)) projectsData = response.data;
+      let propertiesData = [];
+      if (response.data?.properties) propertiesData = response.data.properties;
+      else if (response.data?.data) propertiesData = response.data.data;
+      else if (Array.isArray(response.data)) propertiesData = response.data;
       
-      setRows(projectsData);
-      setTotalItems(response.data?.total || projectsData.length);
-      setTotalPages(response.data?.pages || Math.ceil((response.data?.total || projectsData.length) / itemsPerPage));
+      setRows(propertiesData);
+      setTotalItems(response.data?.total || propertiesData.length);
+      setTotalPages(response.data?.pages || Math.ceil((response.data?.total || propertiesData.length) / itemsPerPage));
       
     } catch (error) {
-      toast(error.response?.data?.message || "Failed to load projects", "error");
+      toast(error.response?.data?.message || "Failed to load properties", "error");
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, currentPage, itemsPerPage]);
+  }, [search, categoryFilter, listingTypeFilter, currentPage, itemsPerPage]);
 
-  // Initial load & filter changes
   useEffect(() => {
-    loadProjects();
-  }, [loadProjects]);
+    loadProperties();
+  }, [loadProperties]);
 
-  // Reset page when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, statusFilter]);
+  }, [search, categoryFilter, listingTypeFilter]);
 
   const toggleFeatured = async (id) => {
     try { 
-      await projectsApi.toggleFeatured(id); 
-      loadProjects(); 
+      await propertiesApi.toggleFeatured(id); 
+      loadProperties(); 
     } catch { 
       toast("Update failed", "error"); 
     }
@@ -79,11 +111,11 @@ export default function ProjectList() {
 
   const handleDelete = async () => {
     try {
-      await projectsApi.remove(delId);
-      toast("Project deleted successfully", "success");
+      await propertiesApi.remove(delId);
+      toast("Property deleted successfully", "success");
       setDelId(null);
       setDelTitle("");
-      loadProjects();
+      loadProperties();
     } catch (e) {
       toast(e.response?.data?.message || "Delete failed", "error");
     }
@@ -91,14 +123,14 @@ export default function ProjectList() {
 
   const clearFilters = () => {
     setSearch("");
-    setStatusFilter("all");
+    setCategoryFilter("");
+    setListingTypeFilter("");
     setShowFilters(false);
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = search !== "" || statusFilter !== "all";
+  const hasActiveFilters = search !== "" || categoryFilter !== "" || listingTypeFilter !== "";
 
-  // Pagination handlers
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -121,6 +153,15 @@ export default function ProjectList() {
     return pages;
   };
 
+  const formatPrice = (price, listingType) => {
+    if (price >= 10000000) {
+      return `₹${(price / 10000000).toFixed(2)} Cr`;
+    } else if (price >= 100000) {
+      return `₹${(price / 100000).toFixed(1)} Lac`;
+    }
+    return `₹${price.toLocaleString()}`;
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4 py-6">
 
@@ -128,11 +169,11 @@ export default function ProjectList() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6B3A1F] to-[#3B1D0D] flex items-center justify-center shadow-lg">
-            <MdApartment size={20} className="text-[#E8D5B0]" />
+            <MdHome size={20} className="text-[#E8D5B0]" />
           </div>
           <div>
-            <h1 className="font-display font-black text-2xl text-[#1C0F05]">Projects</h1>
-            <p className="text-sm text-[#A8978A] mt-0.5">Manage all real estate projects</p>
+            <h1 className="font-display font-black text-2xl text-[#1C0F05]">Properties</h1>
+            <p className="text-sm text-[#A8978A] mt-0.5">Manage all property listings</p>
           </div>
         </div>
         
@@ -140,20 +181,20 @@ export default function ProjectList() {
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF7F4] border border-[#EDE5DD]">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-semibold text-[#1C0F05]">{totalItems}</span>
-            <span className="text-[10px] text-[#A8978A]">Total Projects</span>
+            <span className="text-[10px] text-[#A8978A]">Total Properties</span>
           </div>
           
           <button 
-            onClick={() => loadProjects()} 
-            className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#FAF7F4] border border-[#EDE5DD] text-[#6B3A1F] hover:bg-[#6B3A1F] hover:text-white hover:border-[#6B3A1F] transition-all duration-200"
+            onClick={() => loadProperties()} 
+            className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#FAF7F4] border border-[#EDE5DD] text-[#6B3A1F] hover:bg-[#6B3A1F] hover:text-white transition-all duration-200"
             title="Refresh">
             <MdRefresh size={17} className={loading ? "animate-spin" : ""} />
           </button>
           
           <button 
-            onClick={() => navigate("/projects/add")} 
+            onClick={() => navigate("/properties/add")} 
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#6B3A1F] to-[#3B1D0D] text-white font-semibold text-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-            <MdAdd size={16} /> Add Project
+            <MdAdd size={16} /> Add Property
           </button>
         </div>
       </div>
@@ -166,7 +207,7 @@ export default function ProjectList() {
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search by title, builder, location..."
+              placeholder="Search by title, location, address..."
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#EDE5DD] bg-[#FAF7F4] text-sm text-[#1C0F05] placeholder:text-[#A8978A] focus:outline-none focus:border-[#6B3A1F] focus:ring-2 focus:ring-[#6B3A1F]/15 transition-all"
             />
           </div>
@@ -182,7 +223,7 @@ export default function ProjectList() {
             <span className="text-sm font-medium">Filters</span>
             {hasActiveFilters && (
               <span className="w-4 h-4 rounded-full bg-amber-400 text-white text-[9px] font-bold flex items-center justify-center">
-                {statusFilter !== "all" ? 1 : 0}
+                {(categoryFilter ? 1 : 0) + (listingTypeFilter ? 1 : 0)}
               </span>
             )}
           </button>
@@ -198,28 +239,40 @@ export default function ProjectList() {
 
         {showFilters && (
           <div className="mt-4 pt-4 border-t border-[#EDE5DD]">
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[11px] font-bold text-[#A8978A] uppercase tracking-wide mb-1.5">
-                  Status
+                  Category
                 </label>
-                <div className="flex gap-2">
-                  {[
-                    { value: "all", label: "All", icon: null },
-                    { value: "New Launch", label: "New Launch", icon: null },
-                    { value: "Ready To Move", label: "Ready To Move", icon: <MdCheckCircle size={12} /> },
-                    { value: "Under Construction", label: "Under Construction", icon: null },
-                    { value: "Upcoming", label: "Upcoming", icon: null },
-                  ].map(opt => (
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORY_OPTIONS.map(opt => (
                     <button
                       key={opt.value || "all"}
-                      onClick={() => setStatusFilter(opt.value)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                        statusFilter === opt.value
+                      onClick={() => setCategoryFilter(opt.value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        categoryFilter === opt.value
                           ? "bg-[#6B3A1F] text-white shadow-md"
                           : "bg-[#FAF7F4] text-[#7A6858] hover:bg-[#EDE5DD]"
                       }`}>
-                      {opt.icon}
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-[#A8978A] uppercase tracking-wide mb-1.5">
+                  Listing Type
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {LISTING_TYPE_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value || "all"}
+                      onClick={() => setListingTypeFilter(opt.value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        listingTypeFilter === opt.value
+                          ? "bg-[#6B3A1F] text-white shadow-md"
+                          : "bg-[#FAF7F4] text-[#7A6858] hover:bg-[#EDE5DD]"
+                      }`}>
                       {opt.label}
                     </button>
                   ))}
@@ -237,20 +290,8 @@ export default function ProjectList() {
             <span className="text-sm font-bold text-[#1C0F05]">
               Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
             </span>
-            <span className="text-sm text-[#A8978A]">projects</span>
-            {hasActiveFilters && (
-              <span className="text-xs text-[#6B3A1F] bg-[#6B3A1F]/10 px-2 py-0.5 rounded-full">
-                Filtered
-              </span>
-            )}
+            <span className="text-sm text-[#A8978A]">properties</span>
           </div>
-          {hasActiveFilters && (
-            <button 
-              onClick={clearFilters}
-              className="text-xs text-[#A8978A] hover:text-[#6B3A1F] transition-colors flex items-center gap-1">
-              <MdRefresh size={12} /> Reset filters
-            </button>
-          )}
         </div>
       )}
 
@@ -260,41 +301,37 @@ export default function ProjectList() {
           <table className="w-full text-sm">
             <thead className="bg-[#FAF7F4] text-[#6B3A1F]">
               <tr className="text-left">
-                <th className="px-4 py-3 font-semibold">Project</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">City</th>
-                <th className="px-4 py-3 font-semibold">Price</th>
+                <th className="px-4 py-3 font-semibold">Property</th>
                 <th className="px-4 py-3 font-semibold">Type</th>
+                <th className="px-4 py-3 font-semibold">Listing</th>
+                <th className="px-4 py-3 font-semibold">Price</th>
+                <th className="px-4 py-3 font-semibold">BHK</th>
+                <th className="px-4 py-3 font-semibold">Area</th>
+                <th className="px-4 py-3 font-semibold">Location</th>
                 <th className="px-4 py-3 font-semibold text-center">Featured</th>
-                <th className="px-4 py-3 font-semibold">Created</th>
                 <th className="px-4 py-3 font-semibold text-right">Actions</th>
-              </tr>
+               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-10">
+                  <td colSpan="9" className="text-center py-10">
                     <div className="flex justify-center">
                       <div className="w-8 h-8 rounded-full border-2 border-[#6B3A1F] border-t-transparent animate-spin" />
                     </div>
-                    <p className="text-sm text-gray-400 mt-3">Loading projects...</p>
+                    <p className="text-sm text-gray-400 mt-3">Loading properties...</p>
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-12">
+                  <td colSpan="9" className="text-center py-12">
                     <div className="w-16 h-16 rounded-2xl bg-[#FAF7F4] flex items-center justify-center mx-auto mb-3">
-                      <MdApartment size={24} className="text-gray-300" />
+                      <MdHome size={24} className="text-gray-300" />
                     </div>
-                    <p className="text-gray-500 font-medium mb-1">No projects found</p>
+                    <p className="text-gray-500 font-medium mb-1">No properties found</p>
                     <p className="text-sm text-gray-400">
-                      {hasActiveFilters ? "Try adjusting your filters" : "Click 'Add Project' to get started"}
+                      {hasActiveFilters ? "Try adjusting your filters" : "Click 'Add Property' to get started"}
                     </p>
-                    {hasActiveFilters && (
-                      <button onClick={clearFilters} className="mt-4 text-sm text-[#6B3A1F] hover:underline">
-                        Clear all filters
-                      </button>
-                    )}
                   </td>
                 </tr>
               ) : (
@@ -302,7 +339,7 @@ export default function ProjectList() {
                   <tr 
                     key={d._id}
                     className="border-t hover:bg-[#FAF7F4] transition cursor-pointer"
-                    onClick={() => navigate(`/projects/${d._id}`)}
+                    onClick={() => navigate(`/properties/${d._id}`)}
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -316,7 +353,7 @@ export default function ProjectList() {
                             />
                           ) : (
                             <div className="flex items-center justify-center h-full text-gray-300">
-                              <MdApartment size={16} />
+                              <MdHome size={16} />
                             </div>
                           )}
                         </div>
@@ -325,23 +362,39 @@ export default function ProjectList() {
                             <p className="font-semibold text-[#1C0F05]">{d.title}</p>
                             {d.isFeatured && <MdStar size={12} className="text-amber-400" />}
                           </div>
-                          <p className="text-xs text-gray-400">by {d.builder?.name || "—"}</p>
+                          <p className="text-xs text-gray-400">{d.owner || "No owner"}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={statusBadge(d.status)}>{d.status}</span>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-medium capitalize">{d.category}</span>
+                        <span className="text-[10px] text-gray-400 capitalize">{d.subCategory}</span>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs text-gray-600">{d.city?.name || "—"}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs font-semibold text-gray-800">
-                        {d.priceLabel || (d.priceMin ? `₹${d.priceMin} Cr` : "—")}
+                      <span className={getListingBadge(d.listingType)}>
+                        {getListingLabel(d.listingType)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs text-gray-500">{d.propertyType || "—"}</span>
+                      <div>
+                        <span className="text-xs font-semibold text-gray-800">
+                          {formatPrice(d.price, d.listingType)}
+                        </span>
+                        {d.listingType === "rent" && d.securityDeposit && (
+                          <p className="text-[9px] text-gray-400">Deposit: {formatPrice(d.securityDeposit, "rent")}</p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs text-gray-600">{d.bedrooms} BHK</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs text-gray-600">{d.area} {d.areaUnit}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs text-gray-600 truncate max-w-[150px] block">{d.location}</span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
@@ -354,21 +407,18 @@ export default function ProjectList() {
                         {d.isFeatured ? <MdStar size={16} /> : <MdStarBorder size={16} />}
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
-                      {new Date(d.createdAt).toLocaleDateString()}
-                    </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <button
-                          onClick={() => navigate(`/projects/${d._id}`)}
+                          onClick={() => navigate(`/properties/${d._id}`)}
                           className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all"
                           title="View Details">
                           <MdVisibility size={16} />
                         </button>
                         <button
-                          onClick={() => navigate(`/projects/edit/${d._id}`)}
+                          onClick={() => navigate(`/properties/edit/${d._id}`)}
                           className="p-2 rounded-lg bg-[#6B3A1F]/8 text-[#6B3A1F] hover:bg-[#6B3A1F]/15 transition-all"
-                          title="Edit Project">
+                          title="Edit Property">
                           <MdEdit size={16} />
                         </button>
                         <button
@@ -377,7 +427,7 @@ export default function ProjectList() {
                             setDelTitle(d.title);
                           }}
                           className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-all"
-                          title="Delete Project">
+                          title="Delete Property">
                           <MdDelete size={16} />
                         </button>
                       </div>
@@ -390,7 +440,7 @@ export default function ProjectList() {
         </div>
       </div>
 
-      {/* ✅ Pagination */}
+      {/* Pagination */}
       {!loading && totalPages > 1 && (
         <div className="flex items-center justify-between gap-4 pt-2">
           <p className="text-sm text-[#A8978A] hidden sm:block">
@@ -436,7 +486,7 @@ export default function ProjectList() {
       {/* Delete Modal */}
       {delId && (
         <DeleteModal
-          title="Delete Project?"
+          title="Delete Property?"
           message={`Are you sure you want to delete "${delTitle}"? This action cannot be undone.`}
           onConfirm={handleDelete}
           onCancel={() => { setDelId(null); setDelTitle(""); }}

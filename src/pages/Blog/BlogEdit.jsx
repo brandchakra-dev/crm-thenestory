@@ -87,7 +87,7 @@ export default function BlogEdit() {
       const fd = buildFD(form, files);
       await blogsApi.update(id, fd);
       toast("Blog post updated successfully");
-      navigate(`/nestory/blog/${id}`);
+      navigate(`/blogs/${id}`);
     } catch (e) {
       toast(e.response?.data?.message || "Update failed", "error");
     } finally {
@@ -99,7 +99,7 @@ export default function BlogEdit() {
     try {
       await blogsApi.removeCover(id);
       setExistingCover(null);
-      toast("Cover image removed");
+      toast("Cover image removed", "success");
     } catch {
       toast("Failed to remove cover image", "error");
     }
@@ -119,7 +119,7 @@ export default function BlogEdit() {
       <FormHeader
         title="Edit Blog Post"
         subtitle={`ID: ${id}`}
-        backPath={`/nestory/blog/${id}`}
+        backPath={`/blogs/${id}`}
         onSave={save}
         saving={saving}
         extra={
@@ -239,7 +239,7 @@ export default function BlogEdit() {
       <div className="flex items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-[#EDE5DD]">
         <p className="text-xs text-gray-400">Update blog post information</p>
         <div className="flex gap-3">
-          <button onClick={() => navigate(`/nestory/blog/${id}`)} className={CLS.btnSecondary}>
+          <button onClick={() => navigate(`/blogs/${id}`)} className={CLS.btnSecondary}>
             Cancel
           </button>
           <button onClick={save} disabled={saving} className={CLS.btnPrimary}>

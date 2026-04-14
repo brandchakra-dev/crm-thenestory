@@ -1,7 +1,7 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
-import { createUser, fetchUsers } from "../../api/userService";
+import { createUser } from "../../api/userService";
 
 import {
   FaArrowLeft,
@@ -16,7 +16,6 @@ import {
   FaTimesCircle,
   FaEye,
   FaEyeSlash,
-  FaUserFriends
 } from "react-icons/fa";
 
 export default function CreateUser() {
@@ -29,49 +28,12 @@ export default function CreateUser() {
     role: "executive",
     password: "",
     confirmPassword: "",
-    isActive: true, // ✅ FIX: Changed from Boolean to true
-    assignedManager: "",
+    isActive: true,
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [managers, setManagers] = useState([]);
-  const [loadingManagers, setLoadingManagers] = useState(false);
-
-  // Fixed manager loading logic
-  useEffect(() => {
-    const loadManagers = async () => {
-      try {
-        setLoadingManagers(true);
-        
-        if (currentUser.role === "superadmin" || currentUser.role === "admin") {
-          const data = await fetchUsers();
-          // Check different possible response structures
-          const usersArray = data.users || data || [];
-          const managerUsers = usersArray.filter(u => u.role === 'manager' && u.isActive);
-          setManagers(managerUsers);
-        } else if (currentUser.role === "manager") {
-          // For manager, only show themselves
-          setManagers([currentUser]);
-          // Auto-assign themselves when creating executive
-          if (formData.role === "executive") {
-            setFormData(prev => ({ 
-              ...prev, 
-              assignedManager: currentUser.id || currentUser._id 
-            }));
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load managers:", error);
-        alert("Failed to load managers");
-      } finally {
-        setLoadingManagers(false);
-      }
-    };
-
-    loadManagers();
-  }, [currentUser, formData.role]);
 
   // Get available roles based on current user's permissions
   const getAvailableRoles = () => {
@@ -95,19 +57,6 @@ export default function CreateUser() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    
-    // Auto-assign manager when role is changed to executive by manager
-    if (name === "role" && value === "executive" && currentUser.role === "manager") {
-      setFormData(prev => ({ 
-        ...prev, 
-        assignedManager: currentUser.id || currentUser._id 
-      }));
-    }
-    
-    // Clear manager when role changes from executive
-    if (name === "role" && value !== "executive") {
-      setFormData(prev => ({ ...prev, assignedManager: "" }));
-    }
     
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: "" }));
@@ -138,19 +87,6 @@ export default function CreateUser() {
     else if (formData.password !== formData.confirmPassword)
       newErrors.confirmPassword = "Passwords do not match";
 
-    // Manager validation for executive role
-    // if (formData.role === "executive" && !formData.assignedManager) {
-    //   newErrors.assignedManager = "Please select a manager for the executive";
-    // }
-    // if (
-    //   formData.role === "executive" &&
-    //   (currentUser.role === "superadmin" || currentUser.role === "admin") &&
-    //   !formData.assignedManager
-    // ) {
-    //   newErrors.assignedManager = "Please select a manager for the executive";
-    // }
-    
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -168,22 +104,11 @@ export default function CreateUser() {
         phone: formData.phone.replace(/\D/g, ""),
         role: formData.role,
         password: formData.password,
-        isActive: formData.isActive, // ✅ Now this will be proper boolean value
-        confirmPassword: formData.confirmPassword, // ✅ Add confirmPassword to payload
+        isActive: formData.isActive,
+        confirmPassword: formData.confirmPassword,
       };
 
-      // ✅ Add assignedManager to payload for executive role
-      if (formData.role === "executive") {
-        if (formData.assignedManager) {
-          payload.assignedManager = formData.assignedManager;
-        }
-        // Auto-assign manager for manager role creating executive
-        if (currentUser.role === "manager") {
-          payload.assignedManager = currentUser.id || currentUser._id;
-        }
-      }
-
-      console.log("Sending payload to create user:", payload); // Debug log
+      console.log("Sending payload:", payload);
 
       await createUser(payload);
       
@@ -206,17 +131,12 @@ export default function CreateUser() {
       role: "executive",
       password: "",
       confirmPassword: "",
-      isActive: true, // ✅ Reset to true
-      assignedManager: currentUser.role === "manager" ? (currentUser.id || currentUser._id) : "",
+      isActive: true,
     });
     setErrors({});
   };
 
   const availableRoles = getAvailableRoles();
-  
-  // Show manager dropdown only for executive role and when user has permission
-  const showManagerDropdown = formData.role === "executive" && 
-    (currentUser.role === "superadmin" || currentUser.role === "admin");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-6 px-4 sm:px-6 lg:px-8">
@@ -351,68 +271,6 @@ export default function CreateUser() {
                       {availableRoles.find(r => r.value === formData.role)?.description}
                     </p>
                   </div>
-
-                  {/* Manager Selection - Only show for executive role (Superadmin/Admin) */}
-                  {showManagerDropdown && (
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-                        <FaUserFriends className="text-gray-400" />
-                        Select Manager *
-                      </label>
-                      <select
-                        name="assignedManager"
-                        value={formData.assignedManager}
-                        onChange={handleChange}
-                        className={`w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
-                          errors.assignedManager ? 'border-red-400' : 'border-gray-300'
-                        }`}
-                        disabled={loadingManagers}
-                      >
-                        <option value="">Select a Manager</option>
-                        {loadingManagers ? (
-                          <option value="" disabled>Loading managers...</option>
-                        ) : (
-                          managers.map(manager => (
-                            <option key={manager.id || manager._id} value={manager.id || manager._id}>
-                              {manager.name} ({manager.email})
-                            </option>
-                          ))
-                        )}
-                      </select>
-                      {errors.assignedManager && (
-                        <p className="text-red-600 text-sm flex items-center gap-1">
-                          <FaTimesCircle />
-                          {errors.assignedManager}
-                        </p>
-                      )}
-                      {managers.length === 0 && !loadingManagers && (
-                        <p className="text-sm text-yellow-600">
-                          No active managers found. Please create a manager first.
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Auto-assigned Manager info for Manager role */}
-                  {currentUser.role === "manager" && formData.role === "executive" && (
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-                        <FaUserFriends className="text-gray-400" />
-                        Assigned Manager
-                      </label>
-                      <div className="w-full border border-gray-300 rounded-xl px-4 py-3.5 bg-gray-50">
-                        <p className="text-gray-700">{currentUser.name} (You)</p>
-                        <input
-                          type="hidden"
-                          name="assignedManager"
-                          value={currentUser.id || currentUser._id}
-                        />
-                      </div>
-                      <p className="text-sm text-blue-600">
-                        ✅ Executive will be automatically assigned to you
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
 

@@ -143,6 +143,12 @@ export default function Sidebar() {
         { to: "/projects",     label: "All Projects", icon: Ic.list },
         { to: "/projects/add", label: "Add Project",  icon: Ic.add, roles: ["superadmin","admin","manager"] },
 
+
+          // Projects
+          { divider: true, label: "Properties" },
+          { to: "/properties",     label: "All Properties", icon: Ic.list },
+          { to: "/properties/add", label: "Add Properties",  icon: Ic.add, roles: ["superadmin","admin","manager"] },
+
         // Cities
         { divider: true, label: "Cities" },
         { to: "/cities",     label: "All Cities", icon: Ic.list },
@@ -202,13 +208,9 @@ export default function Sidebar() {
       `}>
 
         {/* Logo */}
-        <Link to="/"
+        <Link to="/admin/dashboard"
           className="flex items-center gap-3 px-5 py-[18px] border-b border-gray-100 flex-shrink-0"
           style={{ background: "linear-gradient(135deg,#1C0F05,#3B1D0D)" }}>
-          <div className="w-9 h-9 bg-white/15 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
-            <img src="/nestory-icon.png" alt="Logo" className="h-7 w-auto"
-              onError={e => { e.target.style.display = "none"; }}/>
-          </div>
           <div>
             <h1 className="text-[15px] font-black text-white leading-none">The Nestory</h1>
             <p className="text-[10px] text-[#E8D5B0]/55 mt-0.5">Admin Panel</p>
@@ -222,7 +224,7 @@ export default function Sidebar() {
 
               {/* Expandable section */}
               {item.isMenu ? (
-                <div>
+                <div className="py-2">
                   <button onClick={() => toggleMenu(item.id)} className={menuBtnCls(openMenus[item.id])}>
                     <div className="flex items-center gap-2.5">
                       <span className={`transition-colors ${openMenus[item.id] ? "text-[#6B3A1F]" : "text-gray-400"}`}>

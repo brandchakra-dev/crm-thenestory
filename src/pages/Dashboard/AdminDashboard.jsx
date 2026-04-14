@@ -19,11 +19,11 @@ const PIE_COLORS = ["#6B3A1F","#C9A84C","#E8D5B0","#3B1D0D"];
 
 // ── Stat card data
 const STAT_META = [
-  { key:"projects", label:"Total Projects",  icon:MdApartment,    color:"#6B3A1F", bg:"#6B3A1F", link:"/nestory/projects" },
-  { key:"cities",   label:"Cities",          icon:MdLocationCity, color:"#2563EB", bg:"#2563EB", link:"/nestory/cities"   },
-  { key:"builders", label:"Builders",        icon:MdPeople,       color:"#7C3AED", bg:"#7C3AED", link:"/nestory/builders" },
-  { key:"videos",   label:"YouTube Videos",  icon:MdVideoLibrary, color:"#DC2626", bg:"#DC2626", link:"/nestory/videos"   },
-  { key:"blogs",    label:"Blog Articles",   icon:MdArticle,      color:"#059669", bg:"#059669", link:"/nestory/blogs"    },
+  { key:"projects", label:"Total Projects",  icon:MdApartment,    color:"#6B3A1F", bg:"#6B3A1F", link:"/projects" },
+  { key:"cities",   label:"Cities",          icon:MdLocationCity, color:"#2563EB", bg:"#2563EB", link:"/cities"   },
+  { key:"builders", label:"Builders",        icon:MdPeople,       color:"#7C3AED", bg:"#7C3AED", link:"/builders" },
+  { key:"videos",   label:"YouTube Videos",  icon:MdVideoLibrary, color:"#DC2626", bg:"#DC2626", link:"/videos"   },
+  { key:"blogs",    label:"Blog Articles",   icon:MdArticle,      color:"#059669", bg:"#059669", link:"/blogs"    },
 ];
 
 // ── Skeleton
@@ -137,7 +137,7 @@ export default function AdminDashboard() {
         <div className={CLS.card + " overflow-hidden"}>
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0EAE2]">
             <p className="font-black text-gray-800 text-sm">Recent Projects</p>
-            <button onClick={() => navigate("/nestory/projects")}
+            <button onClick={() => navigate("/projects")}
               className="flex items-center gap-1 text-xs font-bold text-[#6B3A1F] hover:underline">
               View all <MdOpenInNew size={13}/>
             </button>
@@ -170,7 +170,7 @@ export default function AdminDashboard() {
                   <td className={CLS.td + " text-xs text-gray-500"}>{p.city?.name || "—"}</td>
                   <td className={CLS.td + " text-xs text-gray-400"}>{dayjs(p.createdAt).format("DD MMM YY")}</td>
                   <td className={CLS.td}>
-                    <button onClick={() => navigate(`/nestory/projects/edit/${p._id}`)}
+                    <button onClick={() => navigate(`/projects/edit/${p._id}`)}
                       className="text-[10px] font-bold text-[#6B3A1F] hover:underline">Edit</button>
                   </td>
                 </tr>
@@ -185,11 +185,11 @@ export default function AdminDashboard() {
         <p className="font-black text-gray-800 text-sm mb-4">Quick Actions</p>
         <div className="flex flex-wrap gap-3">
           {[
-            { label:"+ New Project",  to:"/nestory/projects/add",   color:"bg-[#1C0F05] text-[#E8D5B0]" },
-            { label:"+ Add City",     to:"/nestory/cities",         color:"bg-blue-600 text-white"       },
-            { label:"+ Add Builder",  to:"/nestory/builders",       color:"bg-purple-600 text-white"     },
-            { label:"+ Add Video",    to:"/nestory/videos",         color:"bg-red-600 text-white"        },
-            { label:"+ New Blog",     to:"/nestory/blogs/add",      color:"bg-emerald-600 text-white"    },
+            { label:"+ New Project",  to:"/projects/add",   color:"bg-[#1C0F05] text-[#E8D5B0]" },
+            { label:"+ Add City",     to:"/cities",         color:"bg-blue-600 text-white"       },
+            { label:"+ Add Builder",  to:"/builders",       color:"bg-purple-600 text-white"     },
+            { label:"+ Add Video",    to:"/videos",         color:"bg-red-600 text-white"        },
+            { label:"+ New Blog",     to:"/blogs/add",      color:"bg-emerald-600 text-white"    },
           ].map(({ label, to, color }) => (
             <button key={to} onClick={() => navigate(to)}
               className={`px-4 py-2 rounded-xl text-xs font-black transition-all hover:-translate-y-0.5 ${color}`}>

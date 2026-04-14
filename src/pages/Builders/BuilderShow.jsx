@@ -6,7 +6,7 @@ import { useToast, DeleteModal } from "../../components/nestory/index";
 import { 
   MdAdd, MdEdit, MdDelete, MdArrowBack, MdImage, MdStar, MdPhone, 
   MdEmail, MdLanguage, MdBusiness, MdLocationCity, MdPerson,
-  MdCalendarToday, MdRefresh, MdContentCopy, MdCheckCircle, MdCancel
+  MdCalendarToday, MdRefresh, MdContentCopy,
 } from "react-icons/md";
 
 import dayjs from "dayjs";
@@ -68,7 +68,7 @@ export default function BuilderShow() {
         toast(err.response?.data?.message || "Failed to load builder", "error");
       })
       .finally(() => setLoading(false));
-  }, [id, toast]);
+  }, [id]);
 
   const handleDelete = async () => {
     try {

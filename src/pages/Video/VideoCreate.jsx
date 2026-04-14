@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { videosApi, buildFD } from "../../services/nestoryApi";
+import { videosApi } from "../../services/nestoryApi";
 import { CLS } from "../../utils/nestoryTheme";
 import { FormHeader, Field, useToast } from "../../components/nestory/index";
 import { MdAdd, MdClose, MdVideoLibrary } from "react-icons/md";
@@ -53,8 +53,19 @@ export default function VideoCreate() {
   };
 
   const validate = () => {
-    if (!form.title?.trim()) { toast("Title is required", "error"); return false; }
-    if (!form.videoId?.trim()) { toast("YouTube video ID or URL is required", "error"); return false; }
+    if (!form.title?.trim()) { 
+      toast("Title is required", "error"); 
+      return false; 
+    }
+    if (!form.videoId?.trim()) { 
+      toast("YouTube video ID or URL is required", "error"); 
+      return false; 
+    }
+    // ✅ Add YouTube ID validation
+    if (form.videoId.trim().length !== 11 && !form.videoId.includes('youtu')) {
+      toast("Invalid YouTube URL or ID", "error");
+      return false;
+    }
     return true;
   };
 
@@ -62,10 +73,10 @@ export default function VideoCreate() {
     if (!validate()) return;
     setSaving(true);
     try {
-      const fd = buildFD(form, {});
-      await videosApi.create(fd);
+      await videosApi.create(form);
+
       toast("Video created successfully");
-      navigate("/nestory/videos");
+      navigate("/videos");
     } catch (e) {
       toast(e.response?.data?.message || "Save failed", "error");
     } finally {
@@ -81,7 +92,7 @@ export default function VideoCreate() {
       <FormHeader
         title="New Video"
         subtitle="Add a new YouTube video"
-        backPath="/nestory/videos"
+        backPath="/videos"
         onSave={save}
         saving={saving}
         extra={
@@ -192,7 +203,7 @@ export default function VideoCreate() {
       <div className="flex items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-[#EDE5DD]">
         <p className="text-xs text-gray-400">Fill all required fields before saving</p>
         <div className="flex gap-3">
-          <button onClick={() => navigate("/nestory/videos")} className={CLS.btnSecondary}>
+          <button onClick={() => navigate("/videos")} className={CLS.btnSecondary}>
             Cancel
           </button>
           <button onClick={save} disabled={saving} className={CLS.btnPrimary}>

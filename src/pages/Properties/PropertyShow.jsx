@@ -1,16 +1,14 @@
-// src/pages/Nestory/Projects/NestoryProjectShow.jsx
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { projectsApi } from "../../services/nestoryApi";
-import { CLS, statusBadge } from "../../utils/nestoryTheme";
+import { propertiesApi } from "../../services/nestoryApi";
+import { CLS } from "../../utils/nestoryTheme";
 import { useToast, DeleteModal } from "../../components/nestory/index";
 import {
-  MdEdit, MdDelete, MdArrowBack, MdOpenInNew,
-  MdVerified, MdStar, MdCheckCircle,
-  MdApartment, MdImage, MdLocationOn,
-  MdChevronLeft, MdChevronRight, MdInfo,
-  MdAttachMoney, MdCalendarToday, MdLink, MdMap,
-  MdBusiness, MdHome, MdPark, MdBathtub,MdContentCopy
+  MdEdit, MdDelete, MdArrowBack, MdOpenInNew, MdVerified, MdStar,
+  MdCheckCircle, MdHome, MdImage, MdLocationOn, MdChevronLeft,
+  MdChevronRight, MdInfo, MdAttachMoney, MdLink, MdMap,
+  MdBusiness, MdPark, MdContentCopy, MdPhone, MdEmail,
+  MdFitnessCenter, MdPool, MdSecurity, MdElevator, MdLocalParking
 } from "react-icons/md";
 import dayjs from "dayjs";
 
@@ -64,12 +62,39 @@ function StatCard({ label, value, icon, color }) {
   );
 }
 
-export default function ProjectShow() {
-  const { id }    = useParams();
-  const navigate  = useNavigate();
+const getListingBadge = (type) => {
+  switch(type) {
+    case "sale": return CLS.badgeGreen;
+    case "rent": return CLS.badgeBlue;
+    case "lease": return CLS.badgeAmber;
+    default: return CLS.badgeGray;
+  }
+};
+
+const getListingLabel = (type) => {
+  switch(type) {
+    case "sale": return "For Sale";
+    case "rent": return "For Rent";
+    case "lease": return "For Lease";
+    default: return type;
+  }
+};
+
+const formatPrice = (price) => {
+  if (price >= 10000000) {
+    return `₹${(price / 10000000).toFixed(2)} Cr`;
+  } else if (price >= 100000) {
+    return `₹${(price / 100000).toFixed(1)} Lac`;
+  }
+  return `₹${price.toLocaleString()}`;
+};
+
+export default function PropertyShow() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [project, setProject] = useState(null);
+  const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
   const [showDel, setShowDel] = useState(false);
@@ -77,20 +102,20 @@ export default function ProjectShow() {
 
   useEffect(() => {
     setLoading(true);
-    projectsApi.get(id)
-      .then(({ data }) => setProject(data.project))
+    propertiesApi.get(id)
+      .then(({ data }) => setProperty(data.property))
       .catch((err) => {
-        console.error("Error loading project:", err);
-        toast(err.response?.data?.message || "Failed to load project", "error");
+        console.error("Error loading property:", err);
+        toast(err.response?.data?.message || "Failed to load property", "error");
       })
       .finally(() => setLoading(false));
   }, [id]);
 
   const handleDelete = async () => {
     try {
-      await projectsApi.remove(id);
-      toast("Project deleted successfully", "success");
-      navigate("/projects");
+      await propertiesApi.remove(id);
+      toast("Property deleted successfully", "success");
+      navigate("/properties");
     } catch (e) {
       toast(e.response?.data?.message || "Delete failed", "error");
     }
@@ -111,31 +136,28 @@ export default function ProjectShow() {
           <div className="w-6 h-6 rounded-full bg-[#6B3A1F]/10 animate-pulse" />
         </div>
       </div>
-      <p className="mt-4 text-sm text-[#A8978A]">Loading project details...</p>
+      <p className="mt-4 text-sm text-[#A8978A]">Loading property details...</p>
     </div>
   );
 
-  if (!project) return (
+  if (!property) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] py-12">
       <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[#6B3A1F]/10 to-[#C9A84C]/10 flex items-center justify-center mb-5">
-        <MdApartment size={44} className="text-[#6B3A1F]/30" />
+        <MdHome size={44} className="text-[#6B3A1F]/30" />
       </div>
-      <h3 className="font-display font-bold text-2xl text-[#1C0F05] mb-2">Project not found</h3>
+      <h3 className="font-display font-bold text-2xl text-[#1C0F05] mb-2">Property not found</h3>
       <p className="text-[#A8978A] text-center max-w-sm mb-6">
-        The project you're looking for doesn't exist or may have been deleted.
+        The property you're looking for doesn't exist or may have been deleted.
       </p>
-      <button 
-        onClick={() => navigate("/projects")} 
+      <button onClick={() => navigate("/properties")} 
         className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#6B3A1F] to-[#3B1D0D] text-white font-semibold text-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-        <MdArrowBack size={16} /> Back to Projects
+        <MdArrowBack size={16} /> Back to Properties
       </button>
     </div>
   );
 
-  const images = project.images || [];
-  const totalUnits = project.totalUnits || 0;
-  const totalTowers = project.totalTowers || 0;
-  const rating = project.rating || 0;
+  const images = property.images || [];
+  const amenitiesCount = Object.values(property.amenities || {}).filter(v => v === true).length;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -143,28 +165,30 @@ export default function ProjectShow() {
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate("/projects")} 
+          <button onClick={() => navigate("/properties")} 
             className="group w-10 h-10 rounded-xl flex items-center justify-center bg-[#FAF7F4] border border-[#EDE5DD] text-[#6B3A1F] hover:bg-[#6B3A1F] hover:text-white hover:border-[#6B3A1F] transition-all duration-200">
             <MdArrowBack size={18} />
           </button>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-display font-black text-2xl sm:text-3xl text-[#1C0F05]">{project.title}</h1>
-              {project.isFeatured && (
+              <h1 className="font-display font-black text-2xl sm:text-3xl text-[#1C0F05]">{property.title}</h1>
+              {property.isFeatured && (
                 <span className={CLS.badgeAmber + " flex items-center gap-1"}>
                   <MdStar size={10} /> Featured
                 </span>
               )}
-              <span className={statusBadge(project.status)}>{project.status}</span>
-            </div>
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              {project.reraApproved && (
+              {property.isVerified && (
                 <span className={CLS.badgeGreen + " flex items-center gap-1"}>
-                  <MdVerified size={10} /> RERA Approved
+                  <MdVerified size={10} /> Verified
                 </span>
               )}
-              {!project.isActive && (
+              <span className={getListingBadge(property.listingType)}>
+                {getListingLabel(property.listingType)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              <span className="text-xs text-[#A8978A] capitalize">{property.category} / {property.subCategory}</span>
+              {!property.isActive && (
                 <span className={CLS.badgeRed}>Inactive</span>
               )}
             </div>
@@ -173,12 +197,12 @@ export default function ProjectShow() {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => window.open(`/projects/${project.slug}`, "_blank")}
+            onClick={() => window.open(`/properties/${property.slug}`, "_blank")}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#EDE5DD] text-[#6B3A1F] font-semibold text-sm hover:bg-[#FAF7F4] transition-all duration-200">
             <MdOpenInNew size={16} /> View on Site
           </button>
           <button
-            onClick={() => navigate(`/projects/edit/${id}`)}
+            onClick={() => navigate(`/properties/edit/${id}`)}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#6B3A1F] to-[#3B1D0D] text-white font-semibold text-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
             <MdEdit size={16} /> Edit
           </button>
@@ -193,28 +217,28 @@ export default function ProjectShow() {
       {/* Stats Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <StatCard 
-          label="Total Units" 
-          value={totalUnits} 
-          icon={<MdHome size={20} className="text-white" />}
+          label="Price" 
+          value={formatPrice(property.price)} 
+          icon={<MdAttachMoney size={20} className="text-white" />}
           color="bg-gradient-to-br from-[#6B3A1F] to-[#3B1D0D]"
         />
         <StatCard 
-          label="Total Towers" 
-          value={totalTowers} 
-          icon={<MdApartment size={20} className="text-white" />}
-          color="bg-gradient-to-br from-[#C9A84C] to-[#B89430]"
-        />
-        <StatCard 
-          label="Price Range" 
-          value={project.priceLabel || `${project.priceMin} Cr`} 
-          icon={<MdAttachMoney size={20} className="text-white" />}
+          label="Configuration" 
+          value={`${property.bedrooms} BHK • ${property.bathrooms} Bath`} 
+          icon={<MdHome size={20} className="text-white" />}
           color="bg-gradient-to-br from-[#059669] to-[#047857]"
         />
         <StatCard 
-          label="Rating" 
-          value={`${rating} / 5`} 
-          icon={<MdStar size={20} className="text-white" />}
+          label="Area" 
+          value={`${property.area} ${property.areaUnit}`} 
+          icon={<MdCheckCircle size={20} className="text-white" />}
           color="bg-gradient-to-br from-[#D97706] to-[#B45309]"
+        />
+        <StatCard 
+          label="Amenities" 
+          value={amenitiesCount} 
+          icon={<MdPark size={20} className="text-white" />}
+          color="bg-gradient-to-br from-[#2563EB] to-[#1D4ED8]"
         />
       </div>
 
@@ -229,14 +253,14 @@ export default function ProjectShow() {
             <div className="bg-white rounded-2xl border border-[#EDE5DD] overflow-hidden shadow-sm">
               <div className="relative aspect-video bg-gray-100 overflow-hidden group">
                 <img
-                  src={projectsApi.imageUrl(id, images[activeImg]?._id)}
-                  alt={project.title}
+                  src={propertiesApi.imageUrl(id, images[activeImg]?._id)}
+                  alt={property.title}
                   className="w-full h-full object-cover transition-transform duration-500"
                   onError={e => { e.target.style.display = "none"; }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"/>
                 <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-                  <span className="text-white text-xs font-bold drop-shadow">{project.title}</span>
+                  <span className="text-white text-xs font-bold drop-shadow">{property.title}</span>
                   <span className="flex items-center gap-1 px-2 py-1 bg-black/50 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm">
                     <MdImage size={11}/>
                     {activeImg + 1} / {images.length}
@@ -274,7 +298,7 @@ export default function ProjectShow() {
                           : "border-transparent opacity-50 hover:opacity-80"
                       }`}>
                       <img
-                        src={projectsApi.imageUrl(id, img._id)}
+                        src={propertiesApi.imageUrl(id, img._id)}
                         alt=""
                         className="w-full h-full object-cover"
                         onError={e => { e.target.style.display = "none"; }}
@@ -290,7 +314,7 @@ export default function ProjectShow() {
                 <MdImage size={32} className="text-[#A8978A]" />
               </div>
               <p className="text-sm text-[#A8978A]">No images uploaded</p>
-              <button onClick={() => navigate(`/projects/edit/${id}`)}
+              <button onClick={() => navigate(`/properties/edit/${id}`)}
                 className="mt-3 text-xs text-[#6B3A1F] hover:underline">
                 Upload Images →
               </button>
@@ -298,21 +322,21 @@ export default function ProjectShow() {
           )}
 
           {/* Description */}
-          {project.description && (
-            <Section title="About this Project" icon={<MdInfo size={16} />}>
+          {property.description && (
+            <Section title="About this Property" icon={<MdInfo size={16} />}>
               <div className="prose prose-sm max-w-none">
                 <p className="text-sm text-[#7A6858] leading-relaxed whitespace-pre-line">
-                  {project.description}
+                  {property.description}
                 </p>
               </div>
             </Section>
           )}
 
           {/* Key Highlights */}
-          {project.highlights?.length > 0 && (
-            <Section title={`Key Highlights (${project.highlights.length})`} icon={<MdStar size={16} />}>
+          {property.highlights?.length > 0 && (
+            <Section title={`Key Highlights (${property.highlights.length})`} icon={<MdStar size={16} />}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {project.highlights.map((h, i) => (
+                {property.highlights.map((h, i) => (
                   <div key={i} className="flex items-start gap-2.5 p-3 rounded-xl bg-gradient-to-r from-[#6B3A1F]/5 to-transparent border border-[#EDE5DD]/30">
                     <MdCheckCircle size={16} className="text-[#6B3A1F] flex-shrink-0 mt-0.5"/>
                     <span className="text-sm text-[#1C0F05] leading-snug">{h}</span>
@@ -322,73 +346,48 @@ export default function ProjectShow() {
             </Section>
           )}
 
-          {/* Floor Plans */}
-          {project.units?.length > 0 && (
-            <Section title={`Floor Plans & Units (${project.units.length})`} icon={<MdApartment size={16} />}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {project.units.map((unit, i) => (
-                  <div key={i}
-                    className="flex items-center justify-between p-4 rounded-xl border border-[#EDE5DD] bg-white hover:bg-[#6B3A1F]/[0.02] transition-colors">
-                    <div>
-                      <p className="font-bold text-base text-[#1C0F05]">{unit.bhk}</p>
-                      <p className="text-xs text-[#A8978A] mt-0.5">{unit.area}</p>
-                      {unit.floors && (
-                        <p className="text-[10px] text-[#A8978A] mt-0.5">Floors: {unit.floors}</p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <p className="font-black text-base text-[#6B3A1F]">{unit.price}</p>
-                      {unit.priceRaw && (
-                        <p className="text-[10px] text-[#A8978A] mt-0.5">₹{unit.priceRaw} Cr</p>
-                      )}
-                      {unit.floorPlan?.filename && (
-                        <a
-                          href={projectsApi.floorPlanUrl(id, i)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[10px] text-blue-600 hover:underline block mt-1">
-                          View Plan →
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Section>
-          )}
-
           {/* Amenities */}
-          {project.amenities?.length > 0 && (
-            <Section title={`Amenities (${project.amenities.length})`} icon={<MdPark size={16} />}>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                {project.amenities.map((a, i) => (
-                  <div key={i} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-[#EDE5DD] bg-white hover:shadow-sm transition-all">
-                    <span className="text-xl flex-shrink-0">{a.icon}</span>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-[#1C0F05] leading-tight truncate">{a.label}</p>
-                      {a.category && (
-                        <p className="text-[9px] text-[#A8978A] mt-0.5">{a.category}</p>
-                      )}
+          {amenitiesCount > 0 && (
+            <Section title={`Amenities (${amenitiesCount})`} icon={<MdPark size={16} />}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {Object.entries(property.amenities || {}).filter(([_, val]) => val === true).map(([key]) => {
+                  const amenityMap = {
+                    swimmingPool: { label: "Swimming Pool", icon: "🏊" },
+                    gym: { label: "Gym", icon: "💪" },
+                    security: { label: "24/7 Security", icon: "🛡️" },
+                    powerBackup: { label: "Power Backup", icon: "⚡" },
+                    lift: { label: "Lift/Elevator", icon: "🛗" },
+                    park: { label: "Park/Garden", icon: "🌳" },
+                    clubhouse: { label: "Clubhouse", icon: "🏛️" },
+                    kidsPlayArea: { label: "Kids Play Area", icon: "🎪" },
+                    joggingTrack: { label: "Jogging Track", icon: "🏃" },
+                    rainwaterHarvesting: { label: "Rainwater Harvesting", icon: "💧" },
+                    vaastuCompliant: { label: "Vaastu Compliant", icon: "🧭" },
+                  };
+                  const a = amenityMap[key] || { label: key, icon: "✅" };
+                  return (
+                    <div key={key} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-[#EDE5DD] bg-white hover:shadow-sm transition-all">
+                      <span className="text-xl flex-shrink-0">{a.icon}</span>
+                      <span className="text-xs font-semibold text-[#1C0F05]">{a.label}</span>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </Section>
           )}
 
           {/* Nearby */}
-          {project.nearby?.length > 0 && (
-            <Section title="Location & Connectivity" icon={<MdLocationOn size={16} />}>
+          {property.nearby?.length > 0 && (
+            <Section title="Nearby Places" icon={<MdLocationOn size={16} />}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {project.nearby.map((n, i) => (
+                {property.nearby.map((n, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-[#EDE5DD] bg-white hover:bg-[#6B3A1F]/[0.02] transition-colors">
-                    <span className="text-xl flex-shrink-0">{n.icon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-[9px] font-black uppercase tracking-wider text-[#A8978A]">{n.type}</p>
                       <p className="text-xs font-semibold text-[#1C0F05] truncate">{n.name}</p>
                     </div>
                     <span className="text-xs font-bold text-[#6B3A1F] bg-[#6B3A1F]/8 px-2 py-1 rounded-lg flex-shrink-0">
-                      {n.dist}
+                      {n.distance}
                     </span>
                   </div>
                 ))}
@@ -400,41 +399,80 @@ export default function ProjectShow() {
         {/* Right Column - Information Sidebar */}
         <div className="space-y-5">
 
-          {/* Project Info */}
-          <Section title="Project Information" icon={<MdInfo size={16} />}>
-            <InfoRow label="Builder" value={project.builder?.name} />
-            <InfoRow label="City" value={project.city?.name} />
-            <InfoRow label="Location" value={project.location} />
-            <InfoRow label="Property Type" value={project.propertyType} />
-            <InfoRow label="BHK Options" value={project.bhk?.join(", ")} />
+          {/* Property Info */}
+          <Section title="Property Information" icon={<MdInfo size={16} />}>
+            <InfoRow label="Category" value={`${property.category} / ${property.subCategory}`} />
+            <InfoRow label="Listing Type" value={getListingLabel(property.listingType)} badge={getListingBadge(property.listingType)} />
+            <InfoRow label="Location" value={property.location} />
+            <InfoRow label="Address" value={property.address} />
+            <InfoRow label="Landmark" value={property.landmark} />
+            <InfoRow label="City" value={property.city?.name} />
           </Section>
 
-          {/* Pricing */}
+          {/* Pricing Details */}
           <Section title="Pricing" icon={<MdAttachMoney size={16} />}>
-            <InfoRow label="Price Range" value={project.priceLabel} />
-            <InfoRow label="Min Price" value={project.priceMin ? `₹${project.priceMin} Cr` : null} />
-            <InfoRow label="Max Price" value={project.priceMax ? `₹${project.priceMax} Cr` : null} />
+            <InfoRow label="Price" value={formatPrice(property.price)} />
+            <InfoRow label="Price Label" value={property.priceLabel} />
+            {property.listingType === "rent" && (
+              <>
+                <InfoRow label="Security Deposit" value={formatPrice(property.securityDeposit)} />
+                <InfoRow label="Maintenance" value={formatPrice(property.maintenance)} />
+                <InfoRow label="Available From" value={property.availableFrom ? dayjs(property.availableFrom).format("DD MMM YYYY") : null} />
+              </>
+            )}
           </Section>
 
-          {/* Project Specs */}
-          <Section title="Project Specifications" icon={<MdApartment size={16} />}>
-            <InfoRow label="Total Units" value={project.totalUnits} />
-            <InfoRow label="Total Towers" value={project.totalTowers} />
-            <InfoRow label="Total Floors" value={project.totalFloors} />
-            <InfoRow label="Total Area" value={project.totalArea} />
-            <InfoRow label="Possession" value={project.possessionLabel} />
+          {/* Property Specifications */}
+          <Section title="Specifications" icon={<MdHome size={16} />}>
+            <InfoRow label="Bedrooms" value={`${property.bedrooms} BHK`} />
+            <InfoRow label="Bathrooms" value={property.bathrooms} />
+            <InfoRow label="Area" value={`${property.area} ${property.areaUnit}`} />
+            <InfoRow label="Floor" value={property.floor} />
+            <InfoRow label="Total Floors" value={property.totalFloors} />
+            <InfoRow label="Facing" value={property.facing} />
+            <InfoRow label="Furnished" value={property.furnished} />
+            <InfoRow label="Parking" value={property.parking ? `${property.parkingCount} Parking${property.parkingCount !== 1 ? 's' : ''}` : "No Parking"} />
+            <InfoRow label="Age of Property" value={property.ageOfProperty} />
           </Section>
+
+          {/* Owner/Agent Info */}
+          {(property.owner || property.ownerPhone || property.ownerEmail) && (
+            <Section title="Owner/Agent" icon={<MdBusiness size={16} />}>
+              <InfoRow label="Name" value={property.owner} />
+              <InfoRow label="Type" value={property.ownerType} />
+              {property.ownerPhone && (
+                <div className="flex items-start gap-3 py-3 border-b border-[#F0EAE2] last:border-0">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-[#6B3A1F]/8 flex items-center justify-center">
+                    <MdPhone size={14} className="text-[#A8978A]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-[#A8978A] uppercase tracking-wide mb-0.5">Phone</p>
+                    <a href={`tel:${property.ownerPhone}`} className="text-sm text-blue-600 hover:underline">{property.ownerPhone}</a>
+                  </div>
+                </div>
+              )}
+              {property.ownerEmail && (
+                <div className="flex items-start gap-3 py-3 border-b border-[#F0EAE2] last:border-0">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-[#6B3A1F]/8 flex items-center justify-center">
+                    <MdEmail size={14} className="text-[#A8978A]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-[#A8978A] uppercase tracking-wide mb-0.5">Email</p>
+                    <a href={`mailto:${property.ownerEmail}`} className="text-sm text-blue-600 hover:underline break-all">{property.ownerEmail}</a>
+                  </div>
+                </div>
+              )}
+            </Section>
+          )}
 
           {/* Map Location */}
-          {(project.mapLat && project.mapLng) && (
+          {(property.mapLat && property.mapLng) && (
             <Section title="Map Location" icon={<MdMap size={16} />}>
-              <InfoRow label="Latitude" value={project.mapLat} />
-              <InfoRow label="Longitude" value={project.mapLng} />
+              <InfoRow label="Latitude" value={property.mapLat} />
+              <InfoRow label="Longitude" value={property.mapLng} />
               <div className="mt-3">
-                <a 
-                  href={`https://www.google.com/maps?q=${project.mapLat},${project.mapLng}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <a href={`https://www.google.com/maps?q=${property.mapLat},${property.mapLng}`}
+                  target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 transition-colors">
                   <MdLocationOn size={12} /> View on Google Maps
                 </a>
@@ -442,23 +480,16 @@ export default function ProjectShow() {
             </Section>
           )}
 
-          {/* RERA & Legal */}
-          <Section title="RERA & Legal" icon={<MdVerified size={16} />}>
-            <InfoRow label="RERA No." value={project.reraNo} mono />
-            <InfoRow label="RERA Status" value={project.reraApproved ? "Approved ✓" : "Not Approved"}
-              badge={project.reraApproved ? CLS.badgeGreen : CLS.badgeRed} />
-          </Section>
-
           {/* SEO */}
-          {(project.metaTitle || project.metaDescription || project.tags?.length > 0) && (
+          {(property.metaTitle || property.metaDescription || property.tags?.length > 0) && (
             <Section title="SEO & Tags" icon={<MdLink size={16} />}>
-              <InfoRow label="Meta Title" value={project.metaTitle} />
-              <InfoRow label="Meta Description" value={project.metaDescription} />
-              {project.tags?.length > 0 && (
+              <InfoRow label="Meta Title" value={property.metaTitle} />
+              <InfoRow label="Meta Description" value={property.metaDescription} />
+              {property.tags?.length > 0 && (
                 <div className="pt-2">
                   <p className="text-[10px] font-bold text-[#A8978A] uppercase tracking-wide mb-2">Tags</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {project.tags.map((t, i) => (
+                    {property.tags.map((t, i) => (
                       <span key={i} className={CLS.badgeBrown}>{t}</span>
                     ))}
                   </div>
@@ -469,21 +500,21 @@ export default function ProjectShow() {
 
           {/* System Info */}
           <Section title="System Information" icon={<MdInfo size={16} />}>
-            <InfoRow label="Created By" value={project.createdBy?.name} />
-            <InfoRow label="Created" value={project.createdAt ? dayjs(project.createdAt).format("DD MMM YYYY, hh:mm A") : null} />
-            <InfoRow label="Last Updated" value={project.updatedAt ? dayjs(project.updatedAt).format("DD MMM YYYY, hh:mm A") : null} />
-            <InfoRow label="Views" value={project.views} />
-            <InfoRow label="Status" value={project.isActive ? "Active" : "Inactive"}
-              badge={project.isActive ? CLS.badgeGreen : CLS.badgeRed} />
-            <InfoRow label="Slug" value={project.slug} mono />
+            <InfoRow label="Created By" value={property.createdBy?.name} />
+            <InfoRow label="Created" value={property.createdAt ? dayjs(property.createdAt).format("DD MMM YYYY, hh:mm A") : null} />
+            <InfoRow label="Last Updated" value={property.updatedAt ? dayjs(property.updatedAt).format("DD MMM YYYY, hh:mm A") : null} />
+            <InfoRow label="Views" value={property.views} />
+            <InfoRow label="Status" value={property.isActive ? "Active" : "Inactive"} badge={property.isActive ? CLS.badgeGreen : CLS.badgeRed} />
+            <InfoRow label="Verification" value={property.isVerified ? "Verified" : "Not Verified"} badge={property.isVerified ? CLS.badgeGreen : CLS.badgeRed} />
+            <InfoRow label="Slug" value={property.slug} mono />
           </Section>
 
           {/* Copy ID Button */}
           <button
-            onClick={() => copyToClipboard(project._id)}
+            onClick={() => copyToClipboard(property._id)}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#FAF7F4] border border-dashed border-[#EDE5DD] text-xs text-[#A8978A] hover:border-[#6B3A1F] hover:text-[#6B3A1F] transition-all duration-200">
             <MdContentCopy size={14} />
-            {copied ? "Copied!" : "Copy Project ID"}
+            {copied ? "Copied!" : "Copy Property ID"}
           </button>
         </div>
       </div>
@@ -491,8 +522,8 @@ export default function ProjectShow() {
       {/* Delete Modal */}
       {showDel && (
         <DeleteModal
-          title="Delete Project?"
-          message={`Are you sure you want to delete "${project.title}"? This action cannot be undone.`}
+          title="Delete Property?"
+          message={`Are you sure you want to delete "${property.title}"? This action cannot be undone.`}
           onConfirm={handleDelete}
           onCancel={() => setShowDel(false)}
         />

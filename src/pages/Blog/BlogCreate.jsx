@@ -65,10 +65,17 @@ export default function BlogCreate() {
     try {
       const files = coverFile ? { coverImage: coverFile } : {};
       const fd = buildFD(form, files);
+      
+      // ✅ Debug - check FormData
+      for (let pair of fd.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+      
       await blogsApi.create(fd);
-      toast("Blog post created successfully");
-      navigate("/nestory/blog");
+      toast("Blog post created successfully", "success");
+      navigate("/nestory/blog");  // ✅ Fix path
     } catch (e) {
+      console.error("Save error:", e);
       toast(e.response?.data?.message || "Save failed", "error");
     } finally {
       setSaving(false);
@@ -83,7 +90,7 @@ export default function BlogCreate() {
       <FormHeader
         title="New Blog Post"
         subtitle="Create a new article"
-        backPath="/nestory/blog"
+        backPath="/blogs"
         onSave={save}
         saving={saving}
         extra={
@@ -203,7 +210,7 @@ export default function BlogCreate() {
       <div className="flex items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-[#EDE5DD]">
         <p className="text-xs text-gray-400">Fill all required fields before saving</p>
         <div className="flex gap-3">
-          <button onClick={() => navigate("/nestory/blog")} className={CLS.btnSecondary}>
+          <button onClick={() => navigate("/blogs")} className={CLS.btnSecondary}>
             Cancel
           </button>
           <button onClick={save} disabled={saving} className={CLS.btnPrimary}>

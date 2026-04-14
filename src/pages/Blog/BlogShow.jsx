@@ -40,7 +40,7 @@ export default function BlogShow() {
     try {
       await blogsApi.remove(id);
       toast("Blog post deleted");
-      navigate("/nestory/blog");
+      navigate("/blogs");
     } catch (e) {
       toast(e.response?.data?.message || "Delete failed", "error");
     }
@@ -64,7 +64,7 @@ export default function BlogShow() {
     <div className="flex flex-col items-center justify-center py-24 text-gray-400">
       <MdVisibility size={44} className="mb-3 opacity-20"/>
       <p className="text-sm font-medium mb-4">Blog post not found</p>
-      <button onClick={() => navigate("/nestory/blog")} className={CLS.btnSecondary}>
+      <button onClick={() => navigate("/blogs")} className={CLS.btnSecondary}>
         <MdArrowBack size={16}/> Back to Blog
       </button>
     </div>
@@ -75,7 +75,7 @@ export default function BlogShow() {
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <button onClick={() => navigate("/nestory/blog")} className={CLS.btnSecondary + " !px-2.5 !py-2.5 mt-0.5"}>
+          <button onClick={() => navigate("/blogs")} className={CLS.btnSecondary + " !px-2.5 !py-2.5 mt-0.5"}>
             <MdArrowBack size={18}/>
           </button>
           <div>
@@ -102,7 +102,7 @@ export default function BlogShow() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button onClick={() => navigate(`/nestory/blog/edit/${id}`)} className={CLS.btnPrimary}>
+          <button onClick={() => navigate(`/blogs/edit/${id}`)} className={CLS.btnPrimary}>
             <MdEdit size={15}/> Edit
           </button>
           <button onClick={() => setShowDel(true)} className={CLS.btnDanger}>
@@ -115,9 +115,9 @@ export default function BlogShow() {
 
         <div className="lg:col-span-2 space-y-5">
 
-          {blog.coverImage?.url && (
+          {blog.coverImageUrl && (
             <div className={CLS.card + " overflow-hidden"}>
-              <img src={blog.coverImage.url} alt={blog.title} className="w-full object-cover max-h-80"/>
+              <img src={blog.coverImageUrl} alt={blog.title} className="w-full object-cover max-h-80"/>
             </div>
           )}
 

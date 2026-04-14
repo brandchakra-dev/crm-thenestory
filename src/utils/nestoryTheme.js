@@ -82,3 +82,41 @@ export const PROPERTY_TYPES = [
   { value: "Plot", label: "Plot" },
   { value: "Penthouse", label: "Penthouse" },
 ];
+
+export const PROPERTY_CATEGORIES = [
+  { value: "residential", label: "Residential" },
+  { value: "commercial", label: "Commercial" },
+  { value: "industrial", label: "Industrial" },
+];
+
+export const PROPERTY_SUB_CATEGORIES = {
+  residential: ["apartment", "villa", "builder-floor", "plot", "penthouse", "studio"],
+  commercial: ["office-space", "retail-shop", "coworking", "showroom"],
+  industrial: ["warehouse", "factory", "logistics", "industrial-plot"],
+};
+
+export const LISTING_TYPES = [
+  { value: "sale", label: "For Sale" },
+  { value: "rent", label: "For Rent" },
+  { value: "lease", label: "For Lease" },
+];
+
+export const FURNISHED_OPTIONS = [
+  { value: "furnished", label: "Fully Furnished" },
+  { value: "semi-furnished", label: "Semi Furnished" },
+  { value: "unfurnished", label: "Unfurnished" },
+];
+
+export const PROPERTY_AMENITIES = [
+  { key: "swimmingPool", label: "Swimming Pool", icon: "🏊" },
+  { key: "gym", label: "Gym", icon: "💪" },
+  { key: "security", label: "24/7 Security", icon: "🛡️" },
+  { key: "powerBackup", label: "Power Backup", icon: "⚡" },
+  { key: "lift", label: "Lift/Elevator", icon: "🛗" },
+  { key: "park", label: "Park", icon: "🌳" },
+  { key: "clubhouse", label: "Clubhouse", icon: "🏛️" },
+  { key: "kidsPlayArea", label: "Kids Play Area", icon: "🎪" },
+  { key: "joggingTrack", label: "Jogging Track", icon: "🏃" },
+  { key: "rainwaterHarvesting", label: "Rainwater Harvesting", icon: "💧" },
+  { key: "vaastuCompliant", label: "Vaastu Compliant", icon: "🧭" },
+];

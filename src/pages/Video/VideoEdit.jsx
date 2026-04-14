@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { videosApi, buildFD } from "../../services/nestoryApi";
+import { videosApi } from "../../services/nestoryApi";
 import { CLS } from "../../utils/nestoryTheme";
 import { FormHeader, Field, useToast } from "../../components/nestory/index";
 import { MdAdd, MdClose, MdVideoLibrary } from "react-icons/md";
@@ -77,6 +77,11 @@ export default function VideoEdit() {
   const validate = () => {
     if (!form.title?.trim()) { toast("Title is required", "error"); return false; }
     if (!form.videoId?.trim()) { toast("YouTube video ID is required", "error"); return false; }
+        //  YouTube ID validation
+        if (form.videoId.trim().length !== 11 && !form.videoId.includes('youtu')) {
+          toast("Invalid YouTube URL or ID", "error");
+          return false;
+        }
     return true;
   };
 
@@ -84,10 +89,9 @@ export default function VideoEdit() {
     if (!validate()) return;
     setSaving(true);
     try {
-      const fd = buildFD(form, {});
-      await videosApi.update(id, fd);
+      await videosApi.update(id, form);
       toast("Video updated successfully");
-      navigate(`/nestory/videos/${id}`);
+      navigate(`/videos/${id}`);
     } catch (e) {
       toast(e.response?.data?.message || "Update failed", "error");
     } finally {
@@ -109,7 +113,7 @@ export default function VideoEdit() {
       <FormHeader
         title="Edit Video"
         subtitle={`ID: ${id}`}
-        backPath={`/nestory/videos/${id}`}
+        backPath={`/videos/${id}`}
         onSave={save}
         saving={saving}
         extra={
@@ -218,7 +222,7 @@ export default function VideoEdit() {
       <div className="flex items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-[#EDE5DD]">
         <p className="text-xs text-gray-400">Update video information</p>
         <div className="flex gap-3">
-          <button onClick={() => navigate(`/nestory/videos/${id}`)} className={CLS.btnSecondary}>
+          <button onClick={() => navigate(`/videos/${id}`)} className={CLS.btnSecondary}>
             Cancel
           </button>
           <button onClick={save} disabled={saving} className={CLS.btnPrimary}>

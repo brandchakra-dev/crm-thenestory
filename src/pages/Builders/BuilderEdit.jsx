@@ -52,15 +52,23 @@ export default function BuilderEdit() {
           isActive: builder.isActive !== false,
           isFeatured: builder.isFeatured || false,
         });
-        if (builder.logo?.url) {
-          setExistingLogo(builder.logo);
+        
+        // ✅ FIX: Same as CityEdit - use imageUrl pattern
+        if (builder.logoUrl) {
+          setExistingLogo({
+            url: `${import.meta.env.VITE_API_URL}${builder.logoUrl}`
+          });
         }
       })
       .catch(() => toast("Failed to load builder", "error"))
       .finally(() => setLoading(false));
-  }, [id, toast]);
+  }, [id]);
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  // ✅ FIX: Simplified set function (same as CityEdit)
+  const set = (k, v) => {
+    console.log(`Setting ${k}:`, v);
+    setForm(f => ({ ...f, [k]: v }));
+  };
 
   const addCity = () => {
     const city = cityInput.trim();
@@ -75,20 +83,52 @@ export default function BuilderEdit() {
   };
 
   const validate = () => {
-    if (!form.name?.trim()) { toast("Builder name is required", "error"); return false; }
+    if (!form.name?.trim()) { 
+      toast("Builder name is required", "error"); 
+      return false; 
+    }
     return true;
   };
 
+  // ✅ FIX: Same save pattern as CityEdit
   const save = async () => {
     if (!validate()) return;
     setSaving(true);
+  
     try {
-      const files = logoFile ? { logo: logoFile } : {};
-      const fd = buildFD(form, files);
+      const cleanForm = {
+        name: form.name,
+        slug: form.slug,
+        description: form.description,
+        experience: form.experience,
+        totalProjects: parseInt(form.totalProjects) || 0,
+        citiesPresent: form.citiesPresent,
+        website: form.website,
+        phone: form.phone,
+        email: form.email,
+        isActive: form.isActive === true,
+        isFeatured: form.isFeatured === true,
+      };
+  
+      const fd = new FormData();
+      fd.append("data", JSON.stringify(cleanForm));
+      
+      // ✅ CASE 1: new logo
+      if (logoFile) {
+        fd.append("logo", logoFile);
+      }
+      
+      // ✅ CASE 2: logo removed (if no existing logo and no new file)
+      if (!logoFile && !existingLogo) {
+        fd.append("removeLogo", true);
+      }
+  
       await buildersApi.update(id, fd);
-      toast("Builder updated successfully", "success");
-      navigate("/builders");
+  
+      toast("Builder updated successfully");
+      navigate(`/builders/${id}`);
     } catch (e) {
+      console.error(e);
       toast(e.response?.data?.message || "Update failed", "error");
     } finally {
       setSaving(false);
@@ -99,6 +139,7 @@ export default function BuilderEdit() {
     try {
       await buildersApi.removeLogo(id);
       setExistingLogo(null);
+      setLogoFile(null);
       toast("Logo removed", "success");
     } catch {
       toast("Failed to remove logo", "error");
@@ -125,15 +166,21 @@ export default function BuilderEdit() {
         extra={
           <div className="flex items-center gap-5">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-              <input type="checkbox" checked={form.isFeatured}
+              <input 
+                type="checkbox" 
+                checked={form.isFeatured}
                 onChange={e => set("isFeatured", e.target.checked)}
-                className="w-4 h-4 rounded accent-[#6B3A1F]"/>
+                className="w-4 h-4 rounded accent-[#6B3A1F]"
+              />
               <MdStar size={14} className="text-amber-500" /> Featured
             </label>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-              <input type="checkbox" checked={form.isActive}
+              <input 
+                type="checkbox" 
+                checked={form.isActive}
                 onChange={e => set("isActive", e.target.checked)}
-                className="w-4 h-4 rounded accent-[#6B3A1F]"/>
+                className="w-4 h-4 rounded accent-[#6B3A1F]"
+              />
               <MdCheckCircle size={14} className="text-emerald-500" /> Active
             </label>
           </div>
@@ -151,23 +198,37 @@ export default function BuilderEdit() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <Field label="Builder Name" required cls="sm:col-span-2">
-                <input value={form.name} onChange={e => set("name", e.target.value)}
-                  placeholder="Godrej Properties" className={inp}/>
+                <input 
+                  value={form.name} 
+                  onChange={e => set("name", e.target.value)}
+                  placeholder="Godrej Properties" 
+                  className={inp}
+                />
               </Field>
 
               <Field label="Slug">
-                <input value={form.slug} onChange={e => set("slug", e.target.value)}
-                  className={inp + " font-mono text-xs"}/>
+                <input 
+                  value={form.slug} 
+                  onChange={e => set("slug", e.target.value)}
+                  className={inp + " font-mono text-xs"}
+                />
               </Field>
 
               <Field label="Experience">
-                <input value={form.experience} onChange={e => set("experience", e.target.value)}
-                  className={inp}/>
+                <input 
+                  value={form.experience} 
+                  onChange={e => set("experience", e.target.value)}
+                  className={inp}
+                />
               </Field>
 
               <Field label="Total Projects">
-                <input type="number" value={form.totalProjects} onChange={e => set("totalProjects", e.target.value)}
-                  className={inp}/>
+                <input 
+                  type="number" 
+                  value={form.totalProjects} 
+                  onChange={e => set("totalProjects", e.target.value)}
+                  className={inp}
+                />
               </Field>
             </div>
           </div>
@@ -182,24 +243,34 @@ export default function BuilderEdit() {
               <Field label="Phone">
                 <div className="relative">
                   <MdPhone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8978A]" />
-                  <input value={form.phone} onChange={e => set("phone", e.target.value)}
-                    className={inp + " pl-10"}/>
+                  <input 
+                    value={form.phone} 
+                    onChange={e => set("phone", e.target.value)}
+                    className={inp + " pl-10"}
+                  />
                 </div>
               </Field>
 
               <Field label="Email">
                 <div className="relative">
                   <MdEmail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8978A]" />
-                  <input type="email" value={form.email} onChange={e => set("email", e.target.value)}
-                    className={inp + " pl-10"}/>
+                  <input 
+                    type="email" 
+                    value={form.email} 
+                    onChange={e => set("email", e.target.value)}
+                    className={inp + " pl-10"}
+                  />
                 </div>
               </Field>
 
               <Field label="Website" cls="sm:col-span-2">
                 <div className="relative">
                   <MdLanguage size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8978A]" />
-                  <input value={form.website} onChange={e => set("website", e.target.value)}
-                    className={inp + " pl-10"}/>
+                  <input 
+                    value={form.website} 
+                    onChange={e => set("website", e.target.value)}
+                    className={inp + " pl-10"}
+                  />
                 </div>
               </Field>
             </div>
@@ -213,12 +284,18 @@ export default function BuilderEdit() {
             </div>
             <Field label="Cities Present" cls="sm:col-span-2">
               <div className="flex gap-2 mb-3">
-                <input value={cityInput} onChange={e => setCityInput(e.target.value)}
+                <input 
+                  value={cityInput} 
+                  onChange={e => setCityInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCity())}
                   placeholder="Type city name and press Enter" 
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-[#EDE5DD] bg-[#FAF7F4] text-sm focus:outline-none focus:border-[#6B3A1F] transition-all"/>
-                <button type="button" onClick={addCity} 
-                  className="px-4 py-2 rounded-xl bg-[#6B3A1F]/10 text-[#6B3A1F] font-semibold text-sm hover:bg-[#6B3A1F]/20 transition-all">
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-[#EDE5DD] bg-[#FAF7F4] text-sm focus:outline-none focus:border-[#6B3A1F] transition-all"
+                />
+                <button 
+                  type="button" 
+                  onClick={addCity} 
+                  className="px-4 py-2 rounded-xl bg-[#6B3A1F]/10 text-[#6B3A1F] font-semibold text-sm hover:bg-[#6B3A1F]/20 transition-all"
+                >
                   Add City
                 </button>
               </div>
@@ -226,7 +303,8 @@ export default function BuilderEdit() {
                 {form.citiesPresent.map((city, i) => (
                   <span key={i}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#6B3A1F]/8 text-[#6B3A1F] text-xs font-medium cursor-pointer hover:bg-red-50 hover:text-red-500 transition-all group"
-                    onClick={() => removeCity(city)}>
+                    onClick={() => removeCity(city)}
+                  >
                     {city}
                     <span className="text-[#A8978A] group-hover:text-red-500">✕</span>
                   </span>
@@ -242,9 +320,12 @@ export default function BuilderEdit() {
               <h3 className="font-display font-bold text-lg text-[#1C0F05]">Description</h3>
             </div>
             <Field label="Description" cls="sm:col-span-2">
-              <textarea rows={4} value={form.description}
+              <textarea 
+                rows={4} 
+                value={form.description || ""}
                 onChange={e => set("description", e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-[#EDE5DD] bg-[#FAF7F4] text-sm focus:outline-none focus:border-[#6B3A1F] transition-all resize-none"/>
+                className="w-full px-4 py-2.5 rounded-xl border border-[#EDE5DD] bg-[#FAF7F4] text-sm focus:outline-none focus:border-[#6B3A1F] transition-all resize-none"
+              />
             </Field>
           </div>
 

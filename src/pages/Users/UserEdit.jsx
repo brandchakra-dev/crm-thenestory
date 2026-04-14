@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
-import { fetchUser, updateUser, fetchUsers } from "../../api/userService";
+import { fetchUser, updateUser } from "../../api/userService";
 import {
   FaArrowLeft,
   FaUser,
@@ -16,7 +16,6 @@ import {
   FaEye,
   FaEyeSlash,
   FaSave,
-  FaUserFriends
 } from "react-icons/fa";
 import Button from "../../components/ui/Button";
 
@@ -31,32 +30,29 @@ export default function UserEdit() {
     email: "",
     phone: "",
     role: "executive",
-    isActive: Boolean,
+    isActive: true,
     password: "",
     confirmPassword: "",
-    assignedManager: "", // ✅ Changed from managerId to assignedManager
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [managers, setManagers] = useState([]);
-  const [loadingManagers, setLoadingManagers] = useState(false);
 
   const loadUser = async () => {
     try {
       setLoading(true);
-      const data = await fetchUser(id);
-      setUser(data);
+     
+      const data = await fetchUser(id);  
+      setUser(data.user);
       setFormData({
-        name: data.name || "",
-        email: data.email || "",
-        phone: data.phone || "",
-        role: data.role || "executive",
-        isActive: data.isActive !== undefined ? data.isActive : true,
+        name: data.user.name || "",
+        email: data.user.email || "",
+        phone: data.user.phone || "",
+        role: data.user.role || "executive",
+        isActive: data.user.isActive !== undefined ? data.user.isActive : true,
         password: "",
         confirmPassword: "",
-        assignedManager: data.assignedManager?._id || ""
       });
     } catch (error) {
       console.error("Error loading user:", error);
@@ -65,38 +61,6 @@ export default function UserEdit() {
       setLoading(false);
     }
   };
-
-  // Load managers when component mounts or role changes
-  useEffect(() => {
-    const loadManagers = async () => {
-      try {
-        setLoadingManagers(true);
-        
-        if (currentUser.role === "superadmin" || currentUser.role === "admin") {
-          const data = await fetchUsers();
-          const usersArray = data.users || data || [];
-          const managerUsers = usersArray.filter(u => u.role === 'manager' && u.isActive);
-          setManagers(managerUsers);
-        } else if (currentUser.role === "manager") {
-          // For manager, only show themselves
-          setManagers([currentUser]);
-          // Auto-assign themselves when editing executive
-          if (formData.role === "executive" && !formData.assignedManager) {
-            setFormData(prev => ({ 
-              ...prev, 
-              assignedManager: currentUser.id || currentUser._id 
-            }));
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load managers:", error);
-      } finally {
-        setLoadingManagers(false);
-      }
-    };
-
-    loadManagers();
-  }, [currentUser, formData.role]);
 
   useEffect(() => {
     loadUser();
@@ -125,19 +89,6 @@ export default function UserEdit() {
       [name]: type === 'checkbox' ? checked : value
     }));
     
-    // Auto-assign manager when role is changed to executive by manager
-    if (name === "role" && value === "executive" && currentUser.role === "manager") {
-      setFormData(prev => ({ 
-        ...prev, 
-        assignedManager: currentUser.id || currentUser._id 
-      }));
-    }
-    
-    // Clear manager when role changes from executive
-    if (name === "role" && value !== "executive") {
-      setFormData(prev => ({ ...prev, assignedManager: "" }));
-    }
-    
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: "" }));
     }
@@ -162,7 +113,6 @@ export default function UserEdit() {
     if (formData.password !== formData.confirmPassword)
       newErrors.confirmPassword = "Passwords do not match";
 
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -176,7 +126,7 @@ export default function UserEdit() {
     try {
       const payload = {
         name: formData.name.trim(),
-        email: formData.email.trim(),
+        email: formData.email.trim().toLowerCase(),
         phone: formData.phone.replace(/\D/g, ""),
         role: formData.role,
         isActive: formData.isActive,
@@ -187,19 +137,7 @@ export default function UserEdit() {
         payload.password = formData.password;
       }
 
-
-      // ✅ Add assignedManager to payload for executive role
-      if (formData.role === "executive") {
-        if (formData.assignedManager) {
-          payload.assignedManager = formData.assignedManager || null;
-        }
-        // Auto-assign manager for manager role creating executive
-        if (currentUser.role === "manager") {
-          payload.assignedManager = currentUser.id || currentUser._id;
-        }
-      }
-
-      console.log("Sending payload:", payload); // Debug log
+      console.log("Sending payload:", payload);
 
       await updateUser(id, payload);
       
@@ -223,14 +161,9 @@ export default function UserEdit() {
       isActive: user?.isActive !== undefined ? user.isActive : true,
       password: "",
       confirmPassword: "",
-      assignedManager: user?.assignedManager || (currentUser.role === "manager" ? (currentUser.id || currentUser._id) : ""),
     });
     setErrors({});
   };
-
-  // Show manager dropdown only for executive role and when user has permission
-  const showManagerDropdown = formData.role === "executive" && 
-    (currentUser.role === "superadmin" || currentUser.role === "admin");
 
   if (loading) {
     return (
@@ -393,63 +326,6 @@ export default function UserEdit() {
                       Current role: <span className="font-semibold capitalize">{user.role}</span>
                     </p>
                   </div>
-
-                  {/* Manager Selection - Only show for executive role (Superadmin/Admin) */}
-                  {showManagerDropdown && (
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-                        <FaUserFriends className="text-gray-400" />
-                        Select Manager *
-                      </label>
-                      <select
-                        name="assignedManager"
-                        value={formData.assignedManager}
-                        onChange={handleChange}
-                        className={`w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
-                          errors.assignedManager ? 'border-red-400' : 'border-gray-300'
-                        }`}
-                        disabled={loadingManagers}
-                      >
-                        <option value="">Select a Manager</option>
-                        {loadingManagers ? (
-                          <option value="" disabled>Loading managers...</option>
-                        ) : (
-                          managers.map(manager => (
-                            <option key={manager.id || manager._id} value={manager.id || manager._id}>
-                              {manager.name} ({manager.email})
-                            </option>
-                          ))
-                        )}
-                      </select>
-                      {errors.assignedManager && (
-                        <p className="text-red-600 text-sm flex items-center gap-1">
-                          <FaTimesCircle />
-                          {errors.assignedManager}
-                        </p>
-                      )}
-                      {managers.length === 0 && !loadingManagers && (
-                        <p className="text-sm text-yellow-600">
-                          No active managers found. Please create a manager first.
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Auto-assigned Manager info for Manager role */}
-                  {currentUser.role === "manager" && formData.role === "executive" && (
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-                        <FaUserFriends className="text-gray-400" />
-                        Assigned Manager
-                      </label>
-                      <div className="w-full border border-gray-300 rounded-xl px-4 py-3.5 bg-gray-50">
-                        <p className="text-gray-700">{currentUser.name} (You)</p>
-                      </div>
-                      <p className="text-sm text-blue-600">
-                        ✅ Executive will be automatically assigned to you
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -493,16 +369,6 @@ export default function UserEdit() {
                         <FaTimesCircle />
                         {errors.password}
                       </p>
-                    )}
-                    {formData.password && (
-                      <div className="text-xs text-gray-500 space-y-1">
-                        <p>Password requirements:</p>
-                        <ul className="list-disc list-inside">
-                          <li className={formData.password.length >= 6 ? "text-green-600" : "text-gray-400"}>
-                            At least 6 characters
-                          </li>
-                        </ul>
-                      </div>
                     )}
                   </div>
 

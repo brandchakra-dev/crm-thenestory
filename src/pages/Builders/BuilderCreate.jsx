@@ -4,9 +4,8 @@ import { buildersApi, buildFD } from "../../services/nestoryApi";
 import { CLS } from "../../utils/nestoryTheme";
 import { FormHeader, Field, ImageUploader, useToast } from "../../components/nestory/index";
 import { 
-  MdAdd, MdEdit, MdDelete, MdArrowBack, MdImage, MdStar, MdPhone, 
-  MdEmail, MdLanguage, MdBusiness, MdLocationCity, MdPerson,
-  MdCalendarToday, MdRefresh, MdContentCopy, MdCheckCircle, MdCancel
+ MdImage, MdStar, MdPhone, 
+  MdEmail, MdLanguage, MdBusiness, MdLocationCity,  MdCheckCircle
 } from "react-icons/md";
 
 const BLANK = {

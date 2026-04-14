@@ -271,9 +271,9 @@ export default function BuilderList() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-[#EDE5DD]">
-                          {d.logo?.url ? (
+                          {d.logoUrl ? (
                             <img
-                              src={d.logo.url}
+                              src={d.logoUrl}
                               alt={d.name}
                               className="w-full h-full object-cover"
                               onError={(e) => { e.target.style.display = "none"; }}

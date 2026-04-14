@@ -1,15 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { AgGridReact } from "ag-grid-react";
-import "ag-grid-community/styles/ag-grid.css";
-import "ag-grid-community/styles/ag-theme-alpine.css";
 import { videosApi } from "../../services/nestoryApi";
 import { CLS } from "../../utils/nestoryTheme";
 import { DeleteModal, useToast } from "../../components/nestory/index";
 import {
   MdAdd, MdEdit, MdDelete, MdRefresh,
   MdSearch, MdVisibility, MdStar, MdStarBorder,
-  MdVideoLibrary, MdPlayCircle,
+  MdVideoLibrary, MdPlayCircle, MdFilterList,
+  MdCheckCircle, MdCancel, MdSchedule, MdCategory,
 } from "react-icons/md";
 
 const CATEGORIES = ["Property Tour", "Market Update", "Investment Tips", "Buyer's Guide", "News", "Other"];
@@ -19,34 +17,66 @@ export default function VideoList() {
   const { toast }  = useToast();
   const gridRef    = useRef();
 
-  const [rows,     setRows]    = useState([]);
-  const [loading,  setLoading] = useState(true);
-  const [search,   setSearch]  = useState("");
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
-  const [delId,    setDelId]   = useState(null);
-  const [delTitle, setDelTitle]= useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [delId, setDelId] = useState(null);
+  const [delTitle, setDelTitle] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [uniqueCategories, setUniqueCategories] = useState([]);
 
-  const load = useCallback(async () => {
+  const loadVideos = async () => {
     setLoading(true);
     try {
       const params = { limit: 200 };
       if (search) params.search = search;
-      if (category) params.category = category;
-      const { data } = await videosApi.list(params);
-      setRows(data.videos || []);
-    } catch {
-      toast("Failed to load videos", "error");
+      if (category && category !== "all") params.category = category;
+      if (statusFilter !== "all") params.isActive = statusFilter === "active";
+      
+      const response = await videosApi.list(params);
+      
+      let videosData = [];
+      if (response.data?.videos) videosData = response.data.videos;
+      else if (response.data?.data) videosData = response.data.data;
+      else if (Array.isArray(response.data)) videosData = response.data;
+      
+      setRows(videosData);
+      
+      // Extract unique categories for filter
+      const cats = [...new Set(videosData.map(v => v.category).filter(Boolean))];
+      setUniqueCategories(cats);
+      
+    } catch (error) {
+      toast(error.response?.data?.message || "Failed to load videos", "error");
     } finally {
       setLoading(false);
     }
-  }, [search, category]);
+  };
 
-  useEffect(() => { load(); }, [load]);
+  // Initial load
+  useEffect(() => {
+    loadVideos();
+  }, []);
+
+  // Search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadVideos();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Filter changes
+  useEffect(() => {
+    loadVideos();
+  }, [category, statusFilter]);
 
   const toggleFeatured = async (id) => {
     try { 
       await videosApi.toggleFeatured(id); 
-      load(); 
+      loadVideos(); 
     } catch { 
       toast("Update failed", "error"); 
     }
@@ -55,14 +85,24 @@ export default function VideoList() {
   const handleDelete = async () => {
     try {
       await videosApi.remove(delId);
-      toast("Video deleted successfully");
+      toast("Video deleted successfully", "success");
       setDelId(null);
       setDelTitle("");
-      load();
+      loadVideos();
     } catch (e) {
       toast(e.response?.data?.message || "Delete failed", "error");
     }
   };
+
+  const clearFilters = () => {
+    setSearch("");
+    setCategory("");
+    setStatusFilter("all");
+    setShowFilters(false);
+    loadVideos();
+  };
+
+  const hasActiveFilters = search !== "" || category !== "" || statusFilter !== "all";
 
   const categoryColors = {
     "Property Tour": "bg-blue-50 text-blue-700 border-blue-200",
@@ -73,216 +113,338 @@ export default function VideoList() {
     "Other": "bg-gray-50 text-gray-600 border-gray-200",
   };
 
-  const columnDefs = [
-    {
-      headerCheckboxSelection: true,
-      checkboxSelection: true,
-      width: 48,
-      pinned: "left",
-      resizable: false,
-      sortable: false,
-      filter: false,
-    },
-    {
-      field: "title",
-      headerName: "Video",
-      flex: 2,
-      minWidth: 280,
-      pinned: "left",
-      cellRenderer: ({ data: d }) => (
-        <div className="flex items-center gap-3 h-full py-1.5">
-          <div className="relative w-16 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-            {d.thumbnail ? (
-              <img src={d.thumbnail} alt={d.title} className="w-full h-full object-cover"/>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-300">
-                <MdVideoLibrary size={16}/>
-              </div>
-            )}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <MdPlayCircle size={16} className="text-white drop-shadow-md"/>
-            </div>
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1 mb-0.5">
-              {d.isFeatured && <MdStar size={11} className="text-amber-400 flex-shrink-0"/>}
-              <p className="font-semibold text-gray-900 text-sm truncate">{d.title}</p>
-            </div>
-            <p className="text-[10px] text-gray-400">Duration: {d.duration || "—"} • Views: {d.views || 0}</p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      field: "category",
-      headerName: "Category",
-      width: 150,
-      cellRenderer: ({ value }) => (
-        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${categoryColors[value] || "bg-gray-100 text-gray-600"}`}>
-          {value}
-        </span>
-      ),
-    },
-    {
-      field: "videoId",
-      headerName: "YouTube ID",
-      width: 150,
-      cellRenderer: ({ value }) => (
-        <span className="text-xs font-mono text-gray-500">{value}</span>
-      ),
-    },
-    {
-      field: "isEditorPick",
-      headerName: "Editor Pick",
-      width: 110,
-      cellRenderer: ({ value }) => (
-        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold ${
-          value ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-gray-100 text-gray-500"
-        }`}>
-          {value ? "⭐ Editor Pick" : "—"}
-        </span>
-      ),
-    },
-    {
-      field: "isActive",
-      headerName: "Status",
-      width: 90,
-      cellRenderer: ({ value }) => (
-        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold ${
-          value ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-gray-100 text-gray-500 border border-gray-200"
-        }`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${value ? "bg-emerald-500" : "bg-gray-400"}`}/>
-          {value ? "Active" : "Inactive"}
-        </span>
-      ),
-    },
-    {
-      field: "publishedAt",
-      headerName: "Published",
-      width: 110,
-      valueGetter: ({ value }) => value ? new Date(value).toLocaleDateString() : "—",
-    },
-    {
-      field: "sortOrder",
-      headerName: "Sort",
-      width: 70,
-      type: "numericColumn",
-    },
-    {
-      field: "isFeatured",
-      headerName: "Featured",
-      width: 95,
-      cellRenderer: ({ data: d }) => (
-        <div className="flex items-center h-full">
-          <button
-            onClick={(e) => { e.stopPropagation(); toggleFeatured(d._id); }}
-            className={`p-1.5 rounded-lg transition-colors ${
-              d.isFeatured
-                ? "text-amber-500 bg-amber-50 hover:bg-amber-100"
-                : "text-gray-300 hover:bg-gray-100 hover:text-gray-400"
-            }`}>
-            {d.isFeatured ? <MdStar size={16}/> : <MdStarBorder size={16}/>}
-          </button>
-        </div>
-      ),
-    },
-    {
-      headerName: "Actions",
-      width: 130,
-      sortable: false,
-      filter: false,
-      pinned: "right",
-      cellRenderer: ({ data: d }) => (
-        <div className="flex items-center gap-1 h-full">
-          <button
-            onClick={(e) => { e.stopPropagation(); navigate(`/nestory/videos/${d._id}`); }}
-            className={CLS.btnIcon + " bg-blue-50 text-blue-600 hover:bg-blue-100"}
-            title="View Detail">
-            <MdVisibility size={15}/>
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); navigate(`/nestory/videos/edit/${d._id}`); }}
-            className={CLS.btnIcon + " bg-[#6B3A1F]/8 text-[#6B3A1F] hover:bg-[#6B3A1F]/15"}
-            title="Edit">
-            <MdEdit size={15}/>
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); setDelId(d._id); setDelTitle(d.title); }}
-            className={CLS.btnIcon + " bg-red-50 text-red-500 hover:bg-red-100"}
-            title="Delete">
-            <MdDelete size={15}/>
-          </button>
-        </div>
-      ),
-    },
-  ];
+  const formatViews = (views) => {
+    if (views >= 100000) return `${(views / 100000).toFixed(1)}L`;
+    if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
+    return views?.toString() || "0";
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "—";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
 
   return (
-    <div className="flex flex-col gap-4 h-full max-w-7xl">
+    <div className="space-y-6 max-w-7xl mx-auto px-4 py-6">
 
-      <div className={CLS.pageHeader}>
-        <div>
-          <h1 className={CLS.pageTitle}>Videos</h1>
-          <p className={CLS.pageSubtitle}>{rows.length} total videos</p>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6B3A1F] to-[#3B1D0D] flex items-center justify-center shadow-lg">
+            <MdVideoLibrary size={20} className="text-[#E8D5B0]" />
+          </div>
+          <div>
+            <h1 className="font-display font-black text-2xl text-[#1C0F05]">Videos</h1>
+            <p className="text-sm text-[#A8978A] mt-0.5">Manage all YouTube videos</p>
+          </div>
         </div>
+        
         <div className="flex items-center gap-2">
-          <button onClick={load} className={CLS.btnSecondary + " !px-3"} title="Refresh">
-            <MdRefresh size={17}/>
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF7F4] border border-[#EDE5DD]">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-xs font-semibold text-[#1C0F05]">{rows.length}</span>
+            <span className="text-[10px] text-[#A8978A]">Total Videos</span>
+          </div>
+          
+          <button 
+            onClick={() => loadVideos()} 
+            className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#FAF7F4] border border-[#EDE5DD] text-[#6B3A1F] hover:bg-[#6B3A1F] hover:text-white hover:border-[#6B3A1F] transition-all duration-200"
+            title="Refresh">
+            <MdRefresh size={17} className={loading ? "animate-spin" : ""} />
           </button>
-          <button onClick={() => navigate("/nestory/videos/add")} className={CLS.btnPrimary}>
-            <MdAdd size={17}/> New Video
+          
+          <button 
+            onClick={() => navigate("/videos/add")} 
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#6B3A1F] to-[#3B1D0D] text-white font-semibold text-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+            <MdAdd size={16} /> Add Video
           </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3 p-3 bg-white rounded-xl border border-[#EDE5DD]">
-        <div className="relative flex-1 min-w-[200px]">
-          <MdSearch size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search by title..."
-            className={CLS.input + " pl-9"}
-          />
+      {/* Search & Filters Bar */}
+      <div className="bg-white rounded-2xl border border-[#EDE5DD] shadow-sm p-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <MdSearch size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A8978A]" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by video title..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#EDE5DD] bg-[#FAF7F4] text-sm text-[#1C0F05] placeholder:text-[#A8978A] focus:outline-none focus:border-[#6B3A1F] focus:ring-2 focus:ring-[#6B3A1F]/15 transition-all"
+            />
+          </div>
+
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 ${
+              showFilters || hasActiveFilters
+                ? "bg-[#6B3A1F] text-white border-[#6B3A1F]"
+                : "bg-white text-[#6B3A1F] border-[#EDE5DD] hover:border-[#6B3A1F]"
+            }`}>
+            <MdFilterList size={16} />
+            <span className="text-sm font-medium">Filters</span>
+            {hasActiveFilters && (
+              <span className="w-4 h-4 rounded-full bg-amber-400 text-white text-[9px] font-bold flex items-center justify-center">
+                {(category ? 1 : 0) + (statusFilter !== "all" ? 1 : 0)}
+              </span>
+            )}
+          </button>
+
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-red-200 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-all duration-200">
+              <MdCancel size={14} /> Clear
+            </button>
+          )}
         </div>
-        <select
-          value={category}
-          onChange={e => setCategory(e.target.value)}
-          className={CLS.select + " w-44"}>
-          <option value="">All Categories</option>
-          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+
+        {showFilters && (
+          <div className="mt-4 pt-4 border-t border-[#EDE5DD]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Category Filter */}
+              <div>
+                <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#A8978A] uppercase tracking-wide mb-1.5">
+                  <MdCategory size={12} /> Category
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setCategory("")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      category === ""
+                        ? "bg-[#6B3A1F] text-white shadow-md"
+                        : "bg-[#FAF7F4] text-[#7A6858] hover:bg-[#EDE5DD]"
+                    }`}>
+                    All
+                  </button>
+                  {CATEGORIES.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setCategory(cat)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        category === cat
+                          ? "bg-[#6B3A1F] text-white shadow-md"
+                          : "bg-[#FAF7F4] text-[#7A6858] hover:bg-[#EDE5DD]"
+                      }`}>
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#A8978A] uppercase tracking-wide mb-1.5">
+                  <MdCheckCircle size={12} /> Status
+                </label>
+                <div className="flex gap-2">
+                  {[
+                    { value: "all", label: "All", icon: null },
+                    { value: "active", label: "Active", icon: <MdCheckCircle size={12} /> },
+                    { value: "inactive", label: "Inactive", icon: <MdCancel size={12} /> },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setStatusFilter(opt.value)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        statusFilter === opt.value
+                          ? "bg-[#6B3A1F] text-white shadow-md"
+                          : "bg-[#FAF7F4] text-[#7A6858] hover:bg-[#EDE5DD]"
+                      }`}>
+                      {opt.icon}
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div
-        className="ag-theme-alpine flex-1 rounded-2xl overflow-hidden border border-[#EDE5DD]"
-        style={{ minHeight: 500 }}>
-        <AgGridReact
-          ref={gridRef}
-          rowData={rows}
-          columnDefs={columnDefs}
-          defaultColDef={{ resizable: true, sortable: true, filter: true }}
-          rowSelection="multiple"
-          rowHeight={62}
-          headerHeight={44}
-          pagination
-          paginationPageSize={20}
-          loading={loading}
-          animateRows
-          suppressMovableColumns
-          onGridReady={p => p.api.sizeColumnsToFit()}
-          onRowClicked={({ data: d, event }) => {
-            if (!event.target.closest("button")) {
-              navigate(`/nestory/videos/${d._id}`);
-            }
-          }}
-        />
+      {/* Result Count */}
+      {!loading && rows.length > 0 && (
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-[#1C0F05]">{rows.length}</span>
+            <span className="text-sm text-[#A8978A]">videos found</span>
+            {hasActiveFilters && (
+              <span className="text-xs text-[#6B3A1F] bg-[#6B3A1F]/10 px-2 py-0.5 rounded-full">
+                Filtered
+              </span>
+            )}
+          </div>
+          {hasActiveFilters && (
+            <button 
+              onClick={clearFilters}
+              className="text-xs text-[#A8978A] hover:text-[#6B3A1F] transition-colors flex items-center gap-1">
+              <MdRefresh size={12} /> Reset filters
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-[#EDE5DD] overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-[#FAF7F4] text-[#6B3A1F]">
+              <tr className="text-left">
+                <th className="px-4 py-3 font-semibold w-10">
+                  <input type="checkbox" className="rounded border-gray-300" />
+                </th>
+                <th className="px-4 py-3 font-semibold">Video</th>
+                <th className="px-4 py-3 font-semibold">Category</th>
+                <th className="px-4 py-3 font-semibold">YouTube ID</th>
+                <th className="px-4 py-3 font-semibold">Views</th>
+                <th className="px-4 py-3 font-semibold">Published</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold text-center">Editor Pick</th>
+                <th className="px-4 py-3 font-semibold text-center">Featured</th>
+                <th className="px-4 py-3 font-semibold text-right">Actions</th>
+               </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="10" className="text-center py-10">
+                    <div className="flex justify-center">
+                      <div className="w-8 h-8 rounded-full border-2 border-[#6B3A1F] border-t-transparent animate-spin" />
+                    </div>
+                  </td>
+                </tr>
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan="10" className="text-center py-10 text-gray-400">
+                    <MdVideoLibrary size={48} className="mx-auto mb-3 opacity-20" />
+                    No videos found
+                  </td>
+                </tr>
+              ) : (
+                rows.map((d) => (
+                  <tr 
+                    key={d._id}
+                    className="border-t hover:bg-[#FAF7F4] transition cursor-pointer"
+                    onClick={() => navigate(`/videos/${d._id}`)}
+                  >
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" className="rounded border-gray-300" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-20 h-12 rounded-lg overflow-hidden bg-gray-100 border border-[#EDE5DD] flex-shrink-0">
+                          {d.thumbnail ? (
+                            <img
+                              src={d.thumbnail}
+                              alt={d.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { e.target.style.display = "none"; }}
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-gray-300">
+                              <MdVideoLibrary size={20} />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/40">
+                            <MdPlayCircle size={20} className="text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <p className="font-semibold text-[#1C0F05] line-clamp-1">{d.title}</p>
+                            {d.isFeatured && <MdStar size={12} className="text-amber-400 flex-shrink-0" />}
+                          </div>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            Duration: {d.duration || "—"} • Sort: {d.sortOrder || 0}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${categoryColors[d.category] || "bg-gray-100 text-gray-600"}`}>
+                        {d.category || "Other"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded-lg">
+                        {d.videoId}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-[#6B3A1F]">
+                      {formatViews(d.views)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">
+                      {formatDate(d.publishedAt || d.createdAt)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold ${
+                        d.isActive !== false
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "bg-red-50 text-red-500 border border-red-200"
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${d.isActive !== false ? "bg-emerald-500" : "bg-red-400"}`} />
+                        {d.isActive !== false ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${
+                        d.isEditorPick
+                          ? "bg-amber-50 text-amber-700 border border-amber-200"
+                          : "bg-gray-100 text-gray-500"
+                      }`}>
+                        {d.isEditorPick ? "⭐ Editor Pick" : "—"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleFeatured(d._id); }}
+                        className={`p-1.5 rounded-lg transition-all duration-200 ${
+                          d.isFeatured
+                            ? "text-amber-500 bg-amber-50 hover:bg-amber-100"
+                            : "text-gray-300 hover:bg-gray-100 hover:text-gray-400"
+                        }`}>
+                        {d.isFeatured ? <MdStar size={16} /> : <MdStarBorder size={16} />}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => navigate(`/videos/${d._id}`)}
+                          className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all"
+                          title="View Details">
+                          <MdVisibility size={16} />
+                        </button>
+                        <button
+                          onClick={() => navigate(`/videos/edit/${d._id}`)}
+                          className="p-2 rounded-lg bg-[#6B3A1F]/8 text-[#6B3A1F] hover:bg-[#6B3A1F]/15 transition-all"
+                          title="Edit Video">
+                          <MdEdit size={16} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setDelId(d._id);
+                            setDelTitle(d.title);
+                          }}
+                          className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-all"
+                          title="Delete Video">
+                          <MdDelete size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
+      {/* Delete Modal */}
       {delId && (
         <DeleteModal
           title="Delete Video?"
-          message={`Are you sure you want to delete "${delTitle}"? This cannot be undone.`}
+          message={`Are you sure you want to delete "${delTitle}"? This action cannot be undone.`}
           onConfirm={handleDelete}
           onCancel={() => { setDelId(null); setDelTitle(""); }}
         />
