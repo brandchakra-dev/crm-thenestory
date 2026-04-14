@@ -1,7 +1,12 @@
 import axios from "axios";
 
+const isProduction = import.meta.env.MODE === 'production';
+const baseURL = isProduction 
+  ? 'https://webapi.thenestory.in/api'
+  : '/api'; 
+
 const axiosClient = axios.create({
-  baseURL: '/api',
+  baseURL: baseURL,
   withCredentials: true, // ✅ This sends cookies automatically
 });
 
