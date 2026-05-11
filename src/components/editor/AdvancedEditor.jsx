@@ -71,7 +71,7 @@ export default function AdvancedEditor({
       try {
 
         const res = await fetch(
-          "http://localhost:5000/api/upload",
+          "https://webapi.thenestory.in/api/upload",
           {
             method: "POST",
             body: formData,

@@ -7,7 +7,7 @@ const baseURL = isProduction
 
 const axiosClient = axios.create({
   baseURL,
-  withCredentials: true, // sends cookies automatically
+  withCredentials: true, 
 });
 
 let isRefreshing = false;
@@ -35,7 +35,7 @@ axiosClient.interceptors.response.use(
   async (err) => {
     const originalRequest = err.config;
     const status          = err.response?.status;
-    const code            = err.response?.data?.code;   // ✅ use code, not just status
+    const code            = err.response?.data?.code;  
     const url             = originalRequest?.url || "";
 
     // Don't retry these endpoints — infinite loop ban'ta tha

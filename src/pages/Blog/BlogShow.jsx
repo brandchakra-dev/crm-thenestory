@@ -6,6 +6,8 @@ import { useToast, DeleteModal } from "../../components/nestory/index";
 import { MdEdit, MdDelete, MdArrowBack, MdVisibility, MdStar, MdSchedule } from "react-icons/md";
 import dayjs from "dayjs";
 
+import { getImageUrl } from "../../utils/url";
+
 function InfoRow({ label, value, mono = false }) {
   if (!value && value !== 0) return null;
   return (
@@ -117,7 +119,7 @@ export default function BlogShow() {
 
           {blog.coverImageUrl && (
             <div className={CLS.card + " overflow-hidden"}>
-              <img src={blog.coverImageUrl} alt={blog.title} className="w-full object-cover max-h-80"/>
+              <img src={getImageUrl(blog.coverImageUrl)} alt={blog.title} className="w-full object-cover max-h-80"/>
             </div>
           )}
 

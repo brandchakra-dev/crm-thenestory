@@ -14,6 +14,8 @@ import {
 } from "react-icons/md";
 import dayjs from "dayjs";
 
+import { getImageUrl } from "../../utils/url";
+
 const CATEGORIES = ["News", "Tax & Legal", "Help Guides", "Investment", "Finance"];
 
 export default function BlogList() {
@@ -331,7 +333,7 @@ export default function BlogList() {
                         <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-[#EDE5DD] flex-shrink-0">
                           {d.coverImageUrl ? (
                             <img
-                              src={d.coverImageUrl}
+                              src={getImageUrl(d.coverImageUrl)}
                               alt={d.title}
                               className="w-full h-full object-cover"
                               onError={(e) => { e.target.style.display = "none"; }}
