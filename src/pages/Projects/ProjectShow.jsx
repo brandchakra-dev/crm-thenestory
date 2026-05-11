@@ -14,6 +14,8 @@ import {
 } from "react-icons/md";
 import dayjs from "dayjs";
 
+import { getImageUrl } from "../../utils/url";
+
 import DOMPurify from "dompurify";
 
 function Section({ title, children, action, icon }) {
@@ -231,7 +233,7 @@ export default function ProjectShow() {
             <div className="bg-white rounded-2xl border border-[#EDE5DD] overflow-hidden shadow-sm">
               <div className="relative aspect-video bg-gray-100 overflow-hidden group">
                 <img
-                  src={projectsApi.imageUrl(id, images[activeImg]?._id)}
+                  src={getImageUrl(projectsApi.imageUrl(id, images[activeImg]?._id))}
                   alt={project.title}
                   className="w-full h-full object-cover transition-transform duration-500"
                   onError={e => { e.target.style.display = "none"; }}
@@ -276,7 +278,7 @@ export default function ProjectShow() {
                           : "border-transparent opacity-50 hover:opacity-80"
                       }`}>
                       <img
-                        src={projectsApi.imageUrl(id, img._id)}
+                        src={getImageUrl(projectsApi.imageUrl(id, img._id))}
                         alt=""
                         className="w-full h-full object-cover"
                         onError={e => { e.target.style.display = "none"; }}

@@ -6,6 +6,8 @@ import { useToast, DeleteModal } from "../../components/nestory/index";
 import { MdEdit, MdDelete, MdArrowBack, MdImage, MdLocationOn } from "react-icons/md";
 import dayjs from "dayjs";
 
+import { getImageUrl } from "../../utils/url";
+
 function InfoRow({ label, value, mono = false }) {
   if (!value && value !== 0) return null;
   return (
@@ -105,7 +107,7 @@ export default function CityShow() {
           {imageUrl && (
             <div className={CLS.card + " overflow-hidden"}>
               <div className="relative aspect-video bg-gray-100">
-                <img src={imageUrl} alt={city.name} className="w-full h-full object-cover"/>
+                <img src={getImageUrl(imageUrl)} alt={city.name} className="w-full h-full object-cover"/>
               </div>
             </div>
           )}

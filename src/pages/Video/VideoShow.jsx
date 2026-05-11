@@ -3,14 +3,17 @@ import { useNavigate, useParams } from "react-router-dom";
 import { videosApi } from "../../services/nestoryApi";
 import { CLS } from "../../utils/nestoryTheme";
 import { useToast, DeleteModal } from "../../components/nestory/index";
+
 import { 
   MdEdit, MdDelete, MdArrowBack, MdPlayCircle, MdStar, 
   MdVisibility, MdAccessTime, MdCategory, MdLabel, 
   MdPerson, MdDateRange, MdCheckCircle, MdCancel,
-  MdStarBorder, MdRefresh, MdShare, MdLink
+  MdStarBorder, MdRefresh, MdTag, MdLink
 } from "react-icons/md";
-import { MdFingerprint, MdTag } from "react-icons/md";
+
+
 import { FaYoutube } from "react-icons/fa";
+
 import dayjs from "dayjs";
 
 function InfoRow({ icon, label, value, mono = false }) {

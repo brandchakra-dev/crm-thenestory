@@ -9,6 +9,8 @@ import {
   MdCheckCircle, MdCancel, MdFilterList,
 } from "react-icons/md";
 
+import { getImageUrl } from "../../utils/url";
+
 export default function CityList() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -279,7 +281,7 @@ export default function CityList() {
                         <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-[#EDE5DD]">
                           {d.imageUrl ? (
                             <img
-                              src={d.imageUrl}
+                              src={getImageUrl(d.imageUrl)}
                               alt={d.name}
                               className="w-full h-full object-cover"
                               onError={(e) => { e.target.style.display = "none"; }}

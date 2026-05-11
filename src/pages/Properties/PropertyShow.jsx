@@ -8,9 +8,10 @@ import {
   MdCheckCircle, MdHome, MdImage, MdLocationOn, MdChevronLeft,
   MdChevronRight, MdInfo, MdAttachMoney, MdLink, MdMap,
   MdBusiness, MdPark, MdContentCopy, MdPhone, MdEmail,
-  MdFitnessCenter, MdPool, MdSecurity, MdElevator, MdLocalParking
 } from "react-icons/md";
 import dayjs from "dayjs";
+
+import { getImageUrl } from "../../utils/url";
 
 function Section({ title, children, action, icon }) {
   return (
@@ -253,7 +254,7 @@ export default function PropertyShow() {
             <div className="bg-white rounded-2xl border border-[#EDE5DD] overflow-hidden shadow-sm">
               <div className="relative aspect-video bg-gray-100 overflow-hidden group">
                 <img
-                  src={propertiesApi.imageUrl(id, images[activeImg]?._id)}
+                  src={getImageUrl(propertiesApi.imageUrl(id, images[activeImg]?._id))}
                   alt={property.title}
                   className="w-full h-full object-cover transition-transform duration-500"
                   onError={e => { e.target.style.display = "none"; }}
@@ -298,7 +299,7 @@ export default function PropertyShow() {
                           : "border-transparent opacity-50 hover:opacity-80"
                       }`}>
                       <img
-                        src={propertiesApi.imageUrl(id, img._id)}
+                        src={getImageUrl(propertiesApi.imageUrl(id, img._id))}
                         alt=""
                         className="w-full h-full object-cover"
                         onError={e => { e.target.style.display = "none"; }}

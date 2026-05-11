@@ -11,6 +11,8 @@ import {
   MdChevronLeft, MdChevronRight,
 } from "react-icons/md";
 
+import { getImageUrl } from "../../utils/url";
+
 export default function ProjectList() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -336,10 +338,10 @@ export default function ProjectList() {
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-[#EDE5DD]">
+                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-[#EDE5DD]">                      
                           {d.images?.[0]?.url ? (
                             <img
-                              src={d.images[0].url}
+                              src={getImageUrl(d.images[0].url)}
                               alt={d.title}
                               className="w-full h-full object-cover"
                               onError={(e) => { e.target.style.display = "none"; }}

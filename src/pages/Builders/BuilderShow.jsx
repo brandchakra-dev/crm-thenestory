@@ -9,6 +9,8 @@ import {
   MdCalendarToday, MdRefresh, MdContentCopy,
 } from "react-icons/md";
 
+import { getImageUrl } from "../../utils/url";
+
 import dayjs from "dayjs";
 
 function InfoRow({ label, value, mono = false, icon = null }) {
@@ -203,7 +205,7 @@ export default function BuilderShow() {
               {logoUrl ? (
                 <div className="flex items-center justify-center p-8">
                   <img 
-                    src={logoUrl} 
+                    src={getImageUrl(logoUrl)} 
                     alt={builder.name} 
                     className="max-h-32 object-contain"
                     onError={(e) => { e.target.style.display = "none"; }}

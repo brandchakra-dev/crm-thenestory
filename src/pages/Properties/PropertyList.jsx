@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { propertiesApi } from "../../services/nestoryApi";
 import { CLS } from "../../utils/nestoryTheme";
 import { DeleteModal, useToast } from "../../components/nestory/index";
+
 import {
   MdAdd, MdEdit, MdDelete, MdRefresh, MdSearch, MdVisibility,
   MdCheckCircle, MdCancel, MdFilterList, MdStar, MdStarBorder,
-  MdChevronLeft, MdChevronRight, MdHome, MdAttachMoney,
-  MdLocationOn, MdCategory, MdBusiness, MdApartment
+  MdChevronLeft, MdChevronRight, MdHome
 } from "react-icons/md";
+
+import { getImageUrl } from "../../utils/url";
 
 // Constants for filters
 const CATEGORY_OPTIONS = [
@@ -381,7 +383,7 @@ export default function PropertiesList() {
                         <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-[#EDE5DD]">
                           {d.images?.[0]?.url ? (
                             <img
-                              src={d.images[0].url}
+                              src={getImageUrl(d.images[0].url)}
                               alt={d.title}
                               className="w-full h-full object-cover"
                               onError={(e) => { e.target.style.display = "none"; }}
