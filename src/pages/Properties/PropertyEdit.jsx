@@ -9,50 +9,36 @@ import {
   MdApartment, MdPark, MdBusiness, MdVerified
 } from "react-icons/md";
 
-// Same constants as Create
+import AdvancedEditor from "../../components/editor/AdvancedEditor";
+
+// ── Constants
 const CATEGORIES = [
   { value: "residential", label: "Residential" },
-  { value: "commercial", label: "Commercial" },
-  { value: "industrial", label: "Industrial" },
+  { value: "commercial",  label: "Commercial"  },
+  { value: "industrial",  label: "Industrial"  },
 ];
 
 const SUB_CATEGORIES = {
   residential: ["apartment", "villa", "builder-floor", "plot", "penthouse", "studio"],
-  commercial: ["office-space", "retail-shop", "coworking", "showroom"],
-  industrial: ["warehouse", "factory", "logistics", "industrial-plot"],
+  commercial:  ["office-space", "retail-shop", "coworking", "showroom"],
+  industrial:  ["warehouse", "factory", "logistics", "industrial-plot"],
 };
 
-const LISTING_TYPES = ["sale", "rent", "lease"];
+const LISTING_TYPES     = ["sale", "rent", "lease"];
 const FURNISHED_OPTIONS = ["furnished", "semi-furnished", "unfurnished"];
-const FACING_OPTIONS = ["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"];
-const AGE_OPTIONS = ["0-1 year", "1-5 years", "5-10 years", "10+ years"];
-
-const AMENITIES = [
-  { key: "swimmingPool", label: "Swimming Pool", icon: "🏊" },
-  { key: "gym", label: "Gym", icon: "💪" },
-  { key: "security", label: "24/7 Security", icon: "🛡️" },
-  { key: "powerBackup", label: "Power Backup", icon: "⚡" },
-  { key: "lift", label: "Lift/Elevator", icon: "🛗" },
-  { key: "park", label: "Park/Garden", icon: "🌳" },
-  { key: "clubhouse", label: "Clubhouse", icon: "🏛️" },
-  { key: "kidsPlayArea", label: "Kids Play Area", icon: "🎪" },
-  { key: "joggingTrack", label: "Jogging Track", icon: "🏃" },
-  { key: "rainwaterHarvesting", label: "Rainwater Harvesting", icon: "💧" },
-  { key: "vaastuCompliant", label: "Vaastu Compliant", icon: "🧭" },
-];
-
-const NEARBY_TYPES = ["School", "Hospital", "Metro Station", "Bus Stop", "Market", "Mall", "Park", "Temple", "Airport", "Railway Station"];
+const FACING_OPTIONS    = ["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"];
+const AGE_OPTIONS       = ["0-1 year", "1-5 years", "5-10 years", "10+ years"];
 
 const TABS = [
-  { key: "basic", label: "Basic Info", icon: <MdInfo size={14} /> },
-  { key: "details", label: "Details", icon: <MdHome size={14} /> },
-  { key: "pricing", label: "Pricing", icon: <MdAttachMoney size={14} /> },
-  { key: "images", label: "Images", icon: <MdImage size={14} /> },
-  { key: "amenities", label: "Amenities", icon: <MdPark size={14} /> },
-  { key: "nearby", label: "Nearby", icon: <MdLocationOn size={14} /> },
-  { key: "location", label: "Location", icon: <MdMap size={14} /> },
-  { key: "owner", label: "Owner", icon: <MdBusiness size={14} /> },
-  { key: "seo", label: "SEO", icon: <MdLink size={14} /> },
+  { key: "basic",     label: "Basic Info", icon: <MdInfo size={14} /> },
+  { key: "details",   label: "Details",    icon: <MdHome size={14} /> },
+  { key: "pricing",   label: "Pricing",    icon: <MdAttachMoney size={14} /> },
+  { key: "images",    label: "Images",     icon: <MdImage size={14} /> },
+  { key: "amenities", label: "Amenities",  icon: <MdPark size={14} /> },
+  { key: "nearby",    label: "Nearby",     icon: <MdLocationOn size={14} /> },
+  { key: "location",  label: "Location",   icon: <MdMap size={14} /> },
+  { key: "owner",     label: "Owner",      icon: <MdBusiness size={14} /> },
+  { key: "seo",       label: "SEO",        icon: <MdLink size={14} /> },
 ];
 
 const BLANK = {
@@ -63,24 +49,26 @@ const BLANK = {
   city: "", landmark: "", mapLat: "", mapLng: "", owner: "", ownerType: "owner",
   ownerPhone: "", ownerEmail: "", furnished: "unfurnished", parking: false,
   parkingCount: 0, ageOfProperty: "", description: "", highlights: [],
-  amenities: {}, nearby: [], isFeatured: false, isActive: true, isVerified: false,
+  amenities: [], nearby: [], isFeatured: false, isActive: true, isVerified: false,
   availableFrom: "", metaTitle: "", metaDescription: "", tags: [],
 };
 
 export default function PropertyEdit() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const { id }    = useParams();
+  const navigate  = useNavigate();
   const { toast } = useToast();
 
-  const [form, setForm] = useState({ ...BLANK });
-  const [cities, setCities] = useState([]);
-  const [imageFiles, setImageFiles] = useState([]);
-  const [existingImgs, setExistingImgs] = useState([]);
-  const [activeTab, setActiveTab] = useState("basic");
-  const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [hlInput, setHlInput] = useState("");
-  const [tagInput, setTagInput] = useState("");
+  const [form,         setForm]        = useState({ ...BLANK });
+  const [cities,       setCities]      = useState([]);
+  const [imageFiles,   setImageFiles]  = useState([]);
+  const [existingImgs, setExistingImgs]= useState([]);
+  const [activeTab,    setActiveTab]   = useState("basic");
+  const [saving,       setSaving]      = useState(false);
+  const [loading,      setLoading]     = useState(true);
+  const [hlInput,      setHlInput]     = useState("");
+  const [tagInput,     setTagInput]    = useState("");
+  // Amenity quick-add
+  const [amenityInput, setAmenityInput]= useState("");
 
   useEffect(() => {
     Promise.all([
@@ -89,27 +77,34 @@ export default function PropertyEdit() {
     ]).then(([cRes, pRes]) => {
       setCities(cRes.data.cities || []);
       const p = pRes.data.property;
-      
+
       const formatDate = (dateStr) => {
         if (!dateStr) return "";
         const d = new Date(dateStr);
         return d.toISOString().split("T")[0];
       };
 
-      // Initialize amenities as object
-      const amenitiesObj = {};
-      AMENITIES.forEach(a => {
-        amenitiesObj[a.key] = p.amenities?.[a.key] || false;
-      });
+      // ── amenities: normalize to array
+      // Old data may be object {swimmingPool: true, gym: false, ...}
+      // New data will be array [{label, icon, category}, ...]
+      let amenitiesArr = [];
+      if (Array.isArray(p.amenities)) {
+        amenitiesArr = p.amenities;
+      } else if (p.amenities && typeof p.amenities === "object") {
+        // Convert old object format to array for backward compat
+        amenitiesArr = Object.entries(p.amenities)
+          .filter(([, v]) => v === true)
+          .map(([k]) => ({ label: k, icon: "🏠", category: "" }));
+      }
 
       setForm({
         ...BLANK,
         ...p,
-        city: p.city?._id || p.city || "",
-        amenities: amenitiesObj,
-        nearby: p.nearby || [],
-        highlights: p.highlights || [],
-        tags: p.tags || [],
+        city:          p.city?._id || p.city || "",
+        amenities:     amenitiesArr,
+        nearby:        p.nearby     || [],
+        highlights:    p.highlights || [],
+        tags:          p.tags       || [],
         availableFrom: formatDate(p.availableFrom),
       });
       setExistingImgs(p.images?.filter(i => i.url || i._id) || []);
@@ -122,9 +117,18 @@ export default function PropertyEdit() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const toggleAmenity = (key) => {
-    set("amenities", { ...form.amenities, [key]: !form.amenities[key] });
+  // ── Amenity helpers (append style like Nearby)
+  const addAmenity = () => {
+    const label = amenityInput.trim();
+    if (label) {
+      set("amenities", [...form.amenities, { label, icon: "🏠", category: "" }]);
+      setAmenityInput("");
+    }
   };
+  const updAmenity = (i, k, v) => {
+    const a = [...form.amenities]; a[i] = { ...a[i], [k]: v }; set("amenities", a);
+  };
+  const delAmenity = (i) => set("amenities", form.amenities.filter((_, j) => j !== i));
 
   const addHighlight = () => {
     if (hlInput.trim()) {
@@ -133,7 +137,8 @@ export default function PropertyEdit() {
     }
   };
 
-  const addNearby = () => set("nearby", [...form.nearby, { type: "School", name: "", distance: "" }]);
+  // Nearby — type is now text input
+  const addNearby = () => set("nearby", [...form.nearby, { type: "", name: "", distance: "" }]);
   const updNearby = (i, k, v) => { const a = [...form.nearby]; a[i] = { ...a[i], [k]: v }; set("nearby", a); };
   const delNearby = (i) => set("nearby", form.nearby.filter((_, j) => j !== i));
 
@@ -153,10 +158,7 @@ export default function PropertyEdit() {
   };
 
   const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast("Geolocation not supported", "error");
-      return;
-    }
+    if (!navigator.geolocation) { toast("Geolocation not supported", "error"); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         set("mapLat", pos.coords.latitude.toFixed(6));
@@ -168,14 +170,14 @@ export default function PropertyEdit() {
   };
 
   const validate = () => {
-    if (!form.title?.trim()) { toast("Title is required", "error"); setActiveTab("basic"); return false; }
-    if (!form.category) { toast("Category is required", "error"); setActiveTab("basic"); return false; }
-    if (!form.subCategory) { toast("Sub-category is required", "error"); setActiveTab("basic"); return false; }
-    if (!form.listingType) { toast("Listing type is required", "error"); setActiveTab("basic"); return false; }
-    if (!form.city) { toast("City is required", "error"); setActiveTab("basic"); return false; }
-    if (!form.location?.trim()) { toast("Location is required", "error"); setActiveTab("basic"); return false; }
-    if (!form.price) { toast("Price is required", "error"); setActiveTab("pricing"); return false; }
-    if (!form.area) { toast("Area is required", "error"); setActiveTab("details"); return false; }
+    if (!form.title?.trim())    { toast("Title is required", "error");        setActiveTab("basic");   return false; }
+    if (!form.category)          { toast("Category is required", "error");     setActiveTab("basic");   return false; }
+    if (!form.subCategory)       { toast("Sub-category is required", "error"); setActiveTab("basic");   return false; }
+    if (!form.listingType)       { toast("Listing type is required", "error"); setActiveTab("basic");   return false; }
+    if (!form.city)              { toast("City is required", "error");         setActiveTab("basic");   return false; }
+    if (!form.location?.trim()) { toast("Location is required", "error");     setActiveTab("basic");   return false; }
+    if (!form.price)             { toast("Price is required", "error");        setActiveTab("pricing"); return false; }
+    if (!form.area)              { toast("Area is required", "error");         setActiveTab("details"); return false; }
     return true;
   };
 
@@ -184,58 +186,56 @@ export default function PropertyEdit() {
     setSaving(true);
     try {
       const cleanForm = {
-        title: form.title,
-        slug: form.slug,
-        category: form.category,
-        subCategory: form.subCategory,
-        listingType: form.listingType,
-        bedrooms: parseInt(form.bedrooms) || 0,
-        bathrooms: parseInt(form.bathrooms) || 0,
-        area: parseFloat(form.area) || 0,
-        areaUnit: form.areaUnit,
-        floor: form.floor,
-        totalFloors: parseInt(form.totalFloors) || 0,
-        facing: form.facing,
-        price: parseFloat(form.price) || 0,
-        priceLabel: form.priceLabel,
-        securityDeposit: parseFloat(form.securityDeposit) || 0,
-        maintenance: parseFloat(form.maintenance) || 0,
-        location: form.location,
-        address: form.address,
-        city: form.city,
-        landmark: form.landmark,
-        mapLat: form.mapLat,
-        mapLng: form.mapLng,
-        owner: form.owner,
-        ownerType: form.ownerType,
-        ownerPhone: form.ownerPhone,
-        ownerEmail: form.ownerEmail,
-        furnished: form.furnished,
-        parking: form.parking === true,
-        parkingCount: parseInt(form.parkingCount) || 0,
-        ageOfProperty: form.ageOfProperty,
-        description: form.description,
-        highlights: form.highlights,
-        amenities: form.amenities,
-        nearby: form.nearby,
-        isFeatured: form.isFeatured === true,
-        isActive: form.isActive === true,
-        isVerified: form.isVerified === true,
-        availableFrom: form.availableFrom || null,
-        metaTitle: form.metaTitle,
+        title:           form.title,
+        slug:            form.slug,
+        category:        form.category,
+        subCategory:     form.subCategory,
+        listingType:     form.listingType,
+        bedrooms:        parseInt(form.bedrooms)           || 0,
+        bathrooms:       parseInt(form.bathrooms)          || 0,
+        area:            parseFloat(form.area)             || 0,
+        areaUnit:        form.areaUnit,
+        floor:           form.floor,
+        totalFloors:     parseInt(form.totalFloors)        || 0,
+        facing:          form.facing,
+        price:           parseFloat(form.price)            || 0,
+        priceLabel:      form.priceLabel,
+        securityDeposit: parseFloat(form.securityDeposit)  || 0,
+        maintenance:     parseFloat(form.maintenance)      || 0,
+        location:        form.location,
+        address:         form.address,
+        city:            form.city,
+        landmark:        form.landmark,
+        mapLat:          form.mapLat,
+        mapLng:          form.mapLng,
+        owner:           form.owner,
+        ownerType:       form.ownerType,
+        ownerPhone:      form.ownerPhone,
+        ownerEmail:      form.ownerEmail,
+        furnished:       form.furnished,
+        parking:         form.parking    === true,
+        parkingCount:    parseInt(form.parkingCount)       || 0,
+        ageOfProperty:   form.ageOfProperty,
+        description:     form.description,
+        highlights:      form.highlights,
+        amenities:       form.amenities,   // array of {label, icon, category}
+        nearby:          form.nearby,
+        isFeatured:      form.isFeatured   === true,
+        isActive:        form.isActive     === true,
+        isVerified:      form.isVerified   === true,
+        availableFrom:   form.availableFrom || null,
+        metaTitle:       form.metaTitle,
         metaDescription: form.metaDescription,
-        tags: form.tags,
+        tags:            form.tags,
       };
-      
+
       const fd = new FormData();
       fd.append("data", JSON.stringify(cleanForm));
-      
+
       if (imageFiles && imageFiles.length > 0) {
-        imageFiles.forEach(file => {
-          fd.append("images", file);
-        });
+        imageFiles.forEach(file => fd.append("images", file));
       }
-      
+
       await propertiesApi.update(id, fd);
       toast("Property updated successfully");
       navigate(`/properties/${id}`);
@@ -293,7 +293,7 @@ export default function PropertyEdit() {
       <div className="bg-white rounded-2xl border border-[#EDE5DD] shadow-sm overflow-hidden">
         <div className="p-6 space-y-6">
 
-          {/* Basic Information - Same as Create but with values */}
+          {/* ── Basic Information ── */}
           {activeTab === "basic" && (
             <div>
               <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#EDE5DD]">
@@ -345,7 +345,7 @@ export default function PropertyEdit() {
             </div>
           )}
 
-          {/* Details Section */}
+          {/* ── Details ── */}
           {activeTab === "details" && (
             <div>
               <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#EDE5DD]">
@@ -396,9 +396,17 @@ export default function PropertyEdit() {
                     {AGE_OPTIONS.map(a => <option key={a}>{a}</option>)}
                   </select>
                 </Field>
-                <Field label="Description" cls="sm:col-span-3">
+                {/* <Field label="Description" cls="sm:col-span-3">
                   <textarea rows={5} value={form.description} onChange={e => set("description", e.target.value)} className={CLS.textarea}/>
+                </Field> */}
+
+                  <Field label="Description" cls="sm:col-span-3">
+                  <AdvancedEditor
+                    value={form.description}
+                    onChange={(html) => set("description", html)}
+                  />
                 </Field>
+
                 <Field label="Key Highlights" cls="sm:col-span-3">
                   <div className="flex gap-2 mb-2">
                     <input value={hlInput} onChange={e => setHlInput(e.target.value)}
@@ -421,7 +429,7 @@ export default function PropertyEdit() {
             </div>
           )}
 
-          {/* Pricing Section */}
+          {/* ── Pricing ── */}
           {activeTab === "pricing" && (
             <div>
               <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#EDE5DD]">
@@ -455,7 +463,7 @@ export default function PropertyEdit() {
             </div>
           )}
 
-          {/* Images Section */}
+          {/* ── Images ── */}
           {activeTab === "images" && (
             <div>
               <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#EDE5DD]">
@@ -471,26 +479,63 @@ export default function PropertyEdit() {
             </div>
           )}
 
-          {/* Amenities Section */}
+          {/* ── Amenities (append style like Nearby) ── */}
           {activeTab === "amenities" && (
             <div>
-              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#EDE5DD]">
-                <MdPark size={18} className="text-[#6B3A1F]" />
-                <h3 className="font-display font-bold text-lg text-[#1C0F05]">Amenities</h3>
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#EDE5DD]">
+                <div className="flex items-center gap-2">
+                  <MdPark size={18} className="text-[#6B3A1F]" />
+                  <h3 className="font-display font-bold text-lg text-[#1C0F05]">Amenities</h3>
+                </div>
+                <button onClick={addAmenity} className={CLS.btnPrimary + " !py-2"}>
+                  <MdAdd size={15}/> Add Amenity
+                </button>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {AMENITIES.map(amenity => (
-                  <label key={amenity.key} className="flex items-center gap-2 p-3 rounded-xl border border-[#EDE5DD] cursor-pointer hover:bg-[#FAF7F4] transition-colors">
-                    <input type="checkbox" checked={form.amenities[amenity.key] || false} onChange={() => toggleAmenity(amenity.key)} className="w-4 h-4 rounded accent-[#6B3A1F]"/>
-                    <span className="text-lg">{amenity.icon}</span>
-                    <span className="text-sm text-gray-700">{amenity.label}</span>
-                  </label>
-                ))}
+
+              {/* Quick-add input */}
+              <div className="flex gap-2 mb-5">
+                <input
+                  value={amenityInput}
+                  onChange={e => setAmenityInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addAmenity())}
+                  placeholder="Type amenity name and press Enter or click Add"
+                  className={inp + " flex-1"}
+                />
+                <button type="button" onClick={addAmenity} className={CLS.btnSecondary + " !px-3"}>
+                  <MdAdd size={16}/>
+                </button>
               </div>
+
+              {form.amenities.length === 0 && (
+                <div className="text-center py-12 text-gray-400 text-sm border-2 border-dashed border-[#EDE5DD] rounded-2xl">
+                  No amenities added yet. Type above and click "Add Amenity".
+                </div>
+              )}
+
+              {form.amenities.map((a, i) => (
+                <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl border border-[#EDE5DD] bg-[#6B3A1F]/[0.02] relative mb-3">
+                  <button onClick={() => delAmenity(i)}
+                    className="absolute top-2 right-2 p-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100">
+                    <MdDelete size={14}/>
+                  </button>
+                  <Field label="Amenity Name" cls="sm:col-span-2">
+                    <input value={a.label} onChange={e => updAmenity(i, "label", e.target.value)}
+                      placeholder="Swimming Pool" className={inp}/>
+                  </Field>
+                  <Field label="Icon (emoji)">
+                    <input value={a.icon} onChange={e => updAmenity(i, "icon", e.target.value)}
+                      placeholder="🏊" className={inp + " text-xl"}/>
+                  </Field>
+                  <Field label="Category">
+                    <input value={a.category} onChange={e => updAmenity(i, "category", e.target.value)}
+                      placeholder="Recreation" className={inp}/>
+                  </Field>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Nearby Section */}
+          {/* ── Nearby — type is text input ── */}
           {activeTab === "nearby" && (
             <div>
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#EDE5DD]">
@@ -502,28 +547,37 @@ export default function PropertyEdit() {
                   <MdAdd size={15}/> Add Place
                 </button>
               </div>
+
+              {form.nearby.length === 0 && (
+                <div className="text-center py-12 text-gray-400 text-sm border-2 border-dashed border-[#EDE5DD] rounded-2xl">
+                  No nearby places added. Click "Add Place" to start.
+                </div>
+              )}
+
               {form.nearby.map((n, i) => (
                 <div key={i} className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-xl border border-[#EDE5DD] bg-[#6B3A1F]/[0.02] relative mb-3">
                   <button onClick={() => delNearby(i)} className="absolute top-2 right-2 p-1 rounded-lg bg-red-50 text-red-500">
                     <MdDelete size={14}/>
                   </button>
+                  {/* Type changed from <select> to <input type="text"> */}
                   <Field label="Type">
-                    <select value={n.type} onChange={e => updNearby(i, "type", e.target.value)} className={CLS.select}>
-                      {NEARBY_TYPES.map(t => <option key={t}>{t}</option>)}
-                    </select>
+                    <input value={n.type} onChange={e => updNearby(i, "type", e.target.value)}
+                      placeholder="School, Hospital, Metro…" className={inp}/>
                   </Field>
                   <Field label="Name">
-                    <input value={n.name} onChange={e => updNearby(i, "name", e.target.value)} className={inp}/>
+                    <input value={n.name} onChange={e => updNearby(i, "name", e.target.value)}
+                      placeholder="Place name" className={inp}/>
                   </Field>
                   <Field label="Distance">
-                    <input value={n.distance} onChange={e => updNearby(i, "distance", e.target.value)} className={inp}/>
+                    <input value={n.distance} onChange={e => updNearby(i, "distance", e.target.value)}
+                      placeholder="0.5 km" className={inp}/>
                   </Field>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Location Map Section */}
+          {/* ── Map Location ── */}
           {activeTab === "location" && (
             <div>
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#EDE5DD]">
@@ -544,10 +598,23 @@ export default function PropertyEdit() {
                   <input type="number" step="any" value={form.mapLng} onChange={e => set("mapLng", e.target.value)} className={inp}/>
                 </Field>
               </div>
+              {(form.mapLat && form.mapLng) && (
+                <div className="mt-4 p-4 rounded-xl bg-gray-100 border border-[#EDE5DD]">
+                  <p className="text-xs text-gray-500 mb-2">Map Preview</p>
+                  <div className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
+                    <p className="text-sm text-gray-400">📍 {form.mapLat}, {form.mapLng}</p>
+                  </div>
+                  <a href={`https://www.google.com/maps?q=${form.mapLat},${form.mapLng}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:underline mt-2 inline-block">
+                    Open in Google Maps →
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Owner Section */}
+          {/* ── Owner ── */}
           {activeTab === "owner" && (
             <div>
               <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#EDE5DD]">
@@ -575,7 +642,7 @@ export default function PropertyEdit() {
             </div>
           )}
 
-          {/* SEO Section */}
+          {/* ── SEO ── */}
           {activeTab === "seo" && (
             <div>
               <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#EDE5DD]">

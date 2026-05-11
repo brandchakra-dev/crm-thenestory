@@ -14,6 +14,8 @@ import {
 } from "react-icons/md";
 import dayjs from "dayjs";
 
+import DOMPurify from "dompurify";
+
 function Section({ title, children, action, icon }) {
   return (
     <div className="bg-white rounded-2xl border border-[#EDE5DD] overflow-hidden shadow-sm">
@@ -301,9 +303,43 @@ export default function ProjectShow() {
           {project.description && (
             <Section title="About this Project" icon={<MdInfo size={16} />}>
               <div className="prose prose-sm max-w-none">
-                <p className="text-sm text-[#7A6858] leading-relaxed whitespace-pre-line">
-                  {project.description}
-                </p>
+              <div
+                className="
+                  prose 
+                  prose-lg 
+                  max-w-none
+
+                  prose-table:border
+                  prose-th:border
+                  prose-td:border
+
+                  prose-headings:text-[#1C0F05]
+                  prose-headings:font-bold
+
+                  prose-p:text-[#3D2B1A]
+                  prose-p:leading-8
+
+                  prose-a:text-[#6B3A1F]
+                  prose-a:no-underline
+                  hover:prose-a:text-[#C9A84C]
+
+                  prose-strong:text-[#1C0F05]
+
+                  prose-li:text-[#3D2B1A]
+
+                  prose-blockquote:border-l-[#C9A84C]
+                  prose-blockquote:text-[#6B5C4E]
+
+                  prose-img:rounded-2xl
+                  prose-img:shadow-lg
+
+                  prose-code:text-[#6B3A1F]
+
+                  prose-pre:bg-[#1C0F05]
+                  prose-pre:text-white
+                "
+                dangerouslySetInnerHTML={{ __html: project.description }}
+              />
               </div>
             </Section>
           )}

@@ -5,7 +5,10 @@ import { CLS } from "../../utils/nestoryTheme";
 import { FormHeader, Field, TabBar, ImageUploader, useToast } from "../../components/nestory/index";
 import { MdAdd, MdClose } from "react-icons/md";
 
+import AdvancedEditor from "../../components/editor/AdvancedEditor";
+
 const CATEGORIES = ["News", "Tax & Legal", "Help Guides", "Investment", "Finance"];
+
 const TABS = [
   { key: "content", label: "Content" },
   { key: "seo", label: "SEO" },
@@ -174,9 +177,10 @@ export default function BlogEdit() {
             </Field>
 
             <Field label="Content" cls="sm:col-span-2">
-              <textarea rows={12} value={form.content}
-                onChange={e => set("content", e.target.value)}
-                className={CLS.textarea}/>
+              <AdvancedEditor
+                  value={form.content}
+                  onChange={(html) => set("content", html)}
+                />
             </Field>
 
             <Field label="Tags" cls="sm:col-span-2">

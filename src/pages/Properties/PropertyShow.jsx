@@ -157,7 +157,7 @@ export default function PropertyShow() {
   );
 
   const images = property.images || [];
-  const amenitiesCount = Object.values(property.amenities || {}).filter(v => v === true).length;
+  const amenitiesCount = property.amenities?.length || 0;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -346,32 +346,21 @@ export default function PropertyShow() {
             </Section>
           )}
 
-          {/* Amenities */}
-          {amenitiesCount > 0 && (
-            <Section title={`Amenities (${amenitiesCount})`} icon={<MdPark size={16} />}>
+          {/* NEW - amenities is array of { label, icon, category } */}
+          {property.amenities?.length > 0 && (
+            <Section title={`Amenities (${property.amenities.length})`} icon={<MdPark size={16} />}>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {Object.entries(property.amenities || {}).filter(([_, val]) => val === true).map(([key]) => {
-                  const amenityMap = {
-                    swimmingPool: { label: "Swimming Pool", icon: "🏊" },
-                    gym: { label: "Gym", icon: "💪" },
-                    security: { label: "24/7 Security", icon: "🛡️" },
-                    powerBackup: { label: "Power Backup", icon: "⚡" },
-                    lift: { label: "Lift/Elevator", icon: "🛗" },
-                    park: { label: "Park/Garden", icon: "🌳" },
-                    clubhouse: { label: "Clubhouse", icon: "🏛️" },
-                    kidsPlayArea: { label: "Kids Play Area", icon: "🎪" },
-                    joggingTrack: { label: "Jogging Track", icon: "🏃" },
-                    rainwaterHarvesting: { label: "Rainwater Harvesting", icon: "💧" },
-                    vaastuCompliant: { label: "Vaastu Compliant", icon: "🧭" },
-                  };
-                  const a = amenityMap[key] || { label: key, icon: "✅" };
-                  return (
-                    <div key={key} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-[#EDE5DD] bg-white hover:shadow-sm transition-all">
-                      <span className="text-xl flex-shrink-0">{a.icon}</span>
-                      <span className="text-xs font-semibold text-[#1C0F05]">{a.label}</span>
+                {property.amenities.map((a, i) => (
+                  <div key={i} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-[#EDE5DD] bg-white hover:shadow-sm transition-all">
+                    <span className="text-xl flex-shrink-0">{a.icon || "🏠"}</span>
+                    <div className="min-w-0">
+                      <span className="text-xs font-semibold text-[#1C0F05] block truncate">{a.label}</span>
+                      {a.category && (
+                        <span className="text-[10px] text-[#A8978A]">{a.category}</span>
+                      )}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </Section>
           )}

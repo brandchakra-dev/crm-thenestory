@@ -5,44 +5,18 @@ import { projectsApi, citiesApi, buildersApi, buildFD } from "../../services/nes
 import { CLS } from "../../utils/nestoryTheme";
 import { FormHeader, Field, TabBar, ImageUploader, useToast } from "../../components/nestory/index";
 import { 
-  MdAdd, MdClose, MdDelete, MdLocationOn, MdBusiness, 
+  MdAdd, MdClose, MdDelete, MdLocationOn, 
   MdHome, MdAttachMoney, MdCalendarToday, MdStar, 
-  MdCheckCircle, MdImage, MdInfo, MdLink, MdCategory,
+  MdCheckCircle, MdImage, MdInfo, MdLink,
   MdMap, MdApartment, MdPark
 } from "react-icons/md";
+
+import AdvancedEditor from "../../components/editor/AdvancedEditor";
 
 // ── Constants (same as Create)
 const STATUSES   = ["New Launch","Ready To Move","Under Construction","Upcoming"];
 const PROP_TYPES = ["Apartment","Villa","Builder Floor","Plot","Penthouse","Studio"];
 const BHK_OPTS   = ["1 BHK","2 BHK","3 BHK","4 BHK","5 BHK","5+ BHK","Studio"];
-const AMENITY_CATS = ["Recreation","Fitness","Social","Kids","Entertainment","Safety","Utilities","Wellness"];
-const NEARBY_TYPES = ["Metro","Highway","Hospital","School","Mall","Airport","IT Hub","Park","Railway","Temple","Restaurant"];
-
-const PRESET_AMENITIES = [
-  { label:"Infinity Pool",    icon:"🏊", category:"Recreation"    },
-  { label:"Sky Lounge",       icon:"🌆", category:"Recreation"    },
-  { label:"Golf Simulator",   icon:"⛳", category:"Recreation"    },
-  { label:"Swimming Pool",    icon:"🏊", category:"Recreation"    },
-  { label:"Gymnasium",        icon:"💪", category:"Fitness"       },
-  { label:"Yoga Deck",        icon:"🧘", category:"Fitness"       },
-  { label:"Jogging Track",    icon:"🏃", category:"Fitness"       },
-  { label:"Clubhouse",        icon:"🏛️", category:"Social"        },
-  { label:"Co-working Space", icon:"💻", category:"Social"        },
-  { label:"Banquet Hall",     icon:"🎊", category:"Social"        },
-  { label:"Kids Play Area",   icon:"🎪", category:"Kids"          },
-  { label:"Kids Pool",        icon:"🚿", category:"Kids"          },
-  { label:"Mini Theatre",     icon:"🎬", category:"Entertainment" },
-  { label:"Game Room",        icon:"🎮", category:"Entertainment" },
-  { label:"24/7 Security",    icon:"🛡️", category:"Safety"        },
-  { label:"CCTV",             icon:"📹", category:"Safety"        },
-  { label:"Intercom",         icon:"📞", category:"Safety"        },
-  { label:"Power Backup",     icon:"⚡", category:"Utilities"     },
-  { label:"EV Charging",      icon:"🔋", category:"Utilities"     },
-  { label:"Cafeteria",        icon:"☕", category:"Utilities"     },
-  { label:"Laundry Service",  icon:"👕", category:"Utilities"     },
-  { label:"Salon & Spa",      icon:"💆", category:"Wellness"      },
-  { label:"Meditation Zone",  icon:"🧠", category:"Wellness"      },
-];
 
 const TABS = [
   { key:"basic",     label:"Basic Info",   icon: <MdInfo size={14} /> },
@@ -75,17 +49,19 @@ export default function ProjectEdit() {
   const navigate  = useNavigate();
   const { toast } = useToast();
 
-  const [form,        setForm]       = useState({ ...BLANK });
-  const [builders,    setBuilders]   = useState([]);
-  const [cities,      setCities]     = useState([]);
-  const [imageFiles,  setImageFiles] = useState([]);
-  const [existingImgs,setExistingImgs]= useState([]);
-  const [floorFiles,  setFloorFiles] = useState({});
-  const [activeTab,   setActiveTab]  = useState("basic");
-  const [saving,      setSaving]     = useState(false);
-  const [loading,     setLoading]    = useState(true);
-  const [hlInput,     setHlInput]    = useState("");
-  const [tagInput,    setTagInput]   = useState("");
+  const [form,         setForm]        = useState({ ...BLANK });
+  const [builders,     setBuilders]    = useState([]);
+  const [cities,       setCities]      = useState([]);
+  const [imageFiles,   setImageFiles]  = useState([]);
+  const [existingImgs, setExistingImgs]= useState([]);
+  const [floorFiles,   setFloorFiles]  = useState({});
+  const [activeTab,    setActiveTab]   = useState("basic");
+  const [saving,       setSaving]      = useState(false);
+  const [loading,      setLoading]     = useState(true);
+  const [hlInput,      setHlInput]     = useState("");
+  const [tagInput,     setTagInput]    = useState("");
+  // Amenity quick-add input
+  const [amenityInput, setAmenityInput]= useState("");
 
   useEffect(() => {
     Promise.all([
@@ -97,7 +73,7 @@ export default function ProjectEdit() {
       setCities(cRes.data.cities || []);
 
       const p = pRes.data.project;
-      
+
       const formatDate = (dateStr) => {
         if (!dateStr) return "";
         const d = new Date(dateStr);
@@ -133,12 +109,18 @@ export default function ProjectEdit() {
   const toggleBhk = (b) =>
     set("bhk", form.bhk.includes(b) ? form.bhk.filter(x => x !== b) : [...form.bhk, b]);
 
-  const toggleAmenity = (a) => {
-    const exists = form.amenities.find(x => x.label === a.label);
-    set("amenities", exists
-      ? form.amenities.filter(x => x.label !== a.label)
-      : [...form.amenities, a]);
+  // ── Amenity helpers (append style like Nearby)
+  const addAmenity = () => {
+    const label = amenityInput.trim();
+    if (label) {
+      set("amenities", [...form.amenities, { label, icon: "🏠", category: "" }]);
+      setAmenityInput("");
+    }
   };
+  const updAmenity = (i, k, v) => {
+    const a = [...form.amenities]; a[i] = { ...a[i], [k]: v }; set("amenities", a);
+  };
+  const delAmenity = (i) => set("amenities", form.amenities.filter((_, j) => j !== i));
 
   const addHighlight = () => {
     if (hlInput.trim()) {
@@ -147,7 +129,7 @@ export default function ProjectEdit() {
     }
   };
 
-  const addNearby    = () => set("nearby", [...form.nearby, { type:"Metro", name:"", dist:"", icon:"📍" }]);
+  const addNearby    = () => set("nearby", [...form.nearby, { type:"", name:"", dist:"", icon:"📍" }]);
   const updNearby    = (i, k, v) => { const a=[...form.nearby]; a[i]={...a[i],[k]:v}; set("nearby",a); };
   const delNearby    = (i) => set("nearby", form.nearby.filter((_,j) => j!==i));
 
@@ -194,76 +176,75 @@ export default function ProjectEdit() {
     return true;
   };
 
-// Save function - SIRF NAYE IMAGES BHEJO
-const save = async () => {
-  if (!validate()) return;
-  setSaving(true);
-  try {
-    // Clean form data - EXCLUDE images
-    const cleanForm = {
-      title: form.title,
-      slug: form.slug,
-      status: form.status,
-      builder: form.builder,
-      city: form.city,
-      propertyType: form.propertyType,
-      reraNo: form.reraNo,
-      location: form.location,
-      address: form.address,
-      reraApproved: form.reraApproved === true,
-      priceMin: parseFloat(form.priceMin) || 0,
-      priceMax: parseFloat(form.priceMax) || 0,
-      priceLabel: form.priceLabel,
-      totalUnits: parseInt(form.totalUnits) || 0,
-      totalTowers: parseInt(form.totalTowers) || 0,
-      totalFloors: parseInt(form.totalFloors) || 0,
-      totalArea: form.totalArea,
-      launchDate: form.launchDate,
-      possessionDate: form.possessionDate,
-      possessionLabel: form.possessionLabel,
-      rating: parseFloat(form.rating) || 0,
-      bhk: form.bhk,
-      description: form.description,
-      highlights: form.highlights,
-      amenities: form.amenities,
-      nearby: form.nearby,
-      units: form.units,
-      mapLat: form.mapLat,
-      mapLng: form.mapLng,
-      metaTitle: form.metaTitle,
-      metaDescription: form.metaDescription,
-      tags: form.tags,
-      isFeatured: form.isFeatured === true,
-      isActive: form.isActive === true,
-    };
-    
-    const fd = new FormData();
-    fd.append("data", JSON.stringify(cleanForm));
-    
-    // ✅ ONLY send NEW images (imageFiles state se)
-    if (imageFiles && imageFiles.length > 0) {
-      imageFiles.forEach(file => {
-        fd.append("images", file);
-      });
-    }
-    
-    // Handle floor plans
-    Object.entries(floorFiles).forEach(([i, file]) => {
-      if (file) {
-        fd.append("floorPlans", file);
+  const save = async () => {
+    if (!validate()) return;
+    setSaving(true);
+    try {
+      const cleanForm = {
+        title: form.title,
+        slug: form.slug,
+        status: form.status,
+        builder: form.builder,
+        city: form.city,
+        propertyType: form.propertyType,
+        reraNo: form.reraNo,
+        location: form.location,
+        address: form.address,
+        reraApproved: form.reraApproved === true,
+        priceMin: parseFloat(form.priceMin) || 0,
+        priceMax: parseFloat(form.priceMax) || 0,
+        priceLabel: form.priceLabel,
+        totalUnits: parseInt(form.totalUnits) || 0,
+        totalTowers: parseInt(form.totalTowers) || 0,
+        totalFloors: parseInt(form.totalFloors) || 0,
+        totalArea: form.totalArea,
+        launchDate: form.launchDate,
+        possessionDate: form.possessionDate,
+        possessionLabel: form.possessionLabel,
+        rating: parseFloat(form.rating) || 0,
+        bhk: form.bhk,
+        description: form.description,
+        highlights: form.highlights,
+        amenities: form.amenities,
+        nearby: form.nearby,
+        units: form.units,
+        mapLat: form.mapLat,
+        mapLng: form.mapLng,
+        metaTitle: form.metaTitle,
+        metaDescription: form.metaDescription,
+        tags: form.tags,
+        isFeatured: form.isFeatured === true,
+        isActive: form.isActive === true,
+      };
+
+      const fd = new FormData();
+      fd.append("data", JSON.stringify(cleanForm));
+
+      // Only send NEW images
+      if (imageFiles && imageFiles.length > 0) {
+        imageFiles.forEach(file => {
+          fd.append("images", file);
+        });
       }
-    });
-    
-    await projectsApi.update(id, fd);
-    toast("Project updated successfully");
-    navigate(`/nestory/projects/${id}`);
-  } catch (e) {
-    console.error(e);
-    toast(e.response?.data?.message || "Update failed", "error");
-  } finally {
-    setSaving(false);
-  }
-};
+
+      // Handle floor plans
+      Object.entries(floorFiles).forEach(([i, file]) => {
+        if (file) {
+          fd.append("floorPlans", file);
+        }
+      });
+
+      await projectsApi.update(id, fd);
+      toast("Project updated successfully");
+      navigate(`/nestory/projects/${id}`);
+    } catch (e) {
+      console.error(e);
+      toast(e.response?.data?.message || "Update failed", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const inp = CLS.input;
 
   if (loading) return (
@@ -304,7 +285,7 @@ const save = async () => {
       <div className="bg-white rounded-2xl border border-[#EDE5DD] shadow-sm overflow-hidden">
         <div className="p-6 space-y-6">
 
-          {/* Basic Information Section */}
+          {/* ── Basic Information ── */}
           {activeTab === "basic" && (
             <div>
               <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#EDE5DD]">
@@ -366,7 +347,7 @@ const save = async () => {
             </div>
           )}
 
-          {/* Details Section */}
+          {/* ── Details ── */}
           {activeTab === "details" && (
             <div>
               <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#EDE5DD]">
@@ -437,11 +418,14 @@ const save = async () => {
                     ))}
                   </div>
                 </Field>
+
                 <Field label="Description" cls="sm:col-span-3">
-                  <textarea rows={5} value={form.description}
-                    onChange={e => set("description", e.target.value)}
-                    className={CLS.textarea}/>
+                  <AdvancedEditor
+                    value={form.description}
+                    onChange={(html) => set("description", html)}
+                  />
                 </Field>
+
                 <Field label="Key Highlights" cls="sm:col-span-3">
                   <div className="flex gap-2 mb-2">
                     <input value={hlInput} onChange={e => setHlInput(e.target.value)}
@@ -465,7 +449,7 @@ const save = async () => {
             </div>
           )}
 
-          {/* Images Section */}
+          {/* ── Images ── */}
           {activeTab === "images" && (
             <div>
               <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#EDE5DD]">
@@ -481,7 +465,7 @@ const save = async () => {
             </div>
           )}
 
-          {/* Units Section */}
+          {/* ── Floor Plans / Units ── */}
           {activeTab === "units" && (
             <div>
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#EDE5DD]">
@@ -538,40 +522,63 @@ const save = async () => {
             </div>
           )}
 
-          {/* Amenities Section */}
+          {/* ── Amenities (append style like Nearby) ── */}
           {activeTab === "amenities" && (
             <div>
-              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#EDE5DD]">
-                <MdPark size={18} className="text-[#6B3A1F]" />
-                <h3 className="font-display font-bold text-lg text-[#1C0F05]">Amenities</h3>
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#EDE5DD]">
+                <div className="flex items-center gap-2">
+                  <MdPark size={18} className="text-[#6B3A1F]" />
+                  <h3 className="font-display font-bold text-lg text-[#1C0F05]">Amenities</h3>
+                </div>
+                <button onClick={addAmenity} className={CLS.btnPrimary + " !py-2"}>
+                  <MdAdd size={15}/> Add Amenity
+                </button>
               </div>
-              <p className="text-sm font-semibold text-gray-500 mb-4">
-                {form.amenities.length} amenities selected
-              </p>
-              {AMENITY_CATS.map(cat => (
-                <div key={cat} className="mb-4">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2.5">{cat}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {PRESET_AMENITIES.filter(a => a.category === cat).map(a => {
-                      const selected = form.amenities.some(x => x.label === a.label);
-                      return (
-                        <button key={a.label} type="button" onClick={() => toggleAmenity(a)}
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                            selected
-                              ? "bg-[#1C0F05] text-[#E8D5B0] border-[#1C0F05]"
-                              : "bg-white text-gray-600 border-[#EDE5DD] hover:border-[#6B3A1F]/40"
-                          }`}>
-                          <span>{a.icon}</span>{a.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+
+              {/* Quick-add input */}
+              <div className="flex gap-2 mb-5">
+                <input
+                  value={amenityInput}
+                  onChange={e => setAmenityInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addAmenity())}
+                  placeholder="Type amenity name and press Enter or click Add"
+                  className={inp + " flex-1"}
+                />
+                <button type="button" onClick={addAmenity} className={CLS.btnSecondary + " !px-3"}>
+                  <MdAdd size={16}/>
+                </button>
+              </div>
+
+              {form.amenities.length === 0 && (
+                <div className="text-center py-12 text-gray-400 text-sm border-2 border-dashed border-[#EDE5DD] rounded-2xl">
+                  No amenities added yet. Type above and click "Add Amenity".
+                </div>
+              )}
+
+              {form.amenities.map((a, i) => (
+                <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl border border-[#EDE5DD] bg-[#6B3A1F]/[0.02] relative mb-3">
+                  <button onClick={() => delAmenity(i)}
+                    className="absolute top-2 right-2 p-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100">
+                    <MdDelete size={14}/>
+                  </button>
+                  <Field label="Amenity Name" cls="sm:col-span-2">
+                    <input value={a.label} onChange={e => updAmenity(i, "label", e.target.value)}
+                      placeholder="Swimming Pool" className={inp}/>
+                  </Field>
+                  <Field label="Icon (emoji)">
+                    <input value={a.icon} onChange={e => updAmenity(i, "icon", e.target.value)}
+                      placeholder="🏊" className={inp + " text-xl"}/>
+                  </Field>
+                  <Field label="Category">
+                    <input value={a.category} onChange={e => updAmenity(i, "category", e.target.value)}
+                      placeholder="Recreation" className={inp}/>
+                  </Field>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Nearby Section */}
+          {/* ── Nearby ── */}
           {activeTab === "nearby" && (
             <div>
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#EDE5DD]">
@@ -596,10 +603,10 @@ const save = async () => {
                     className="absolute top-2 right-2 p-1 rounded-lg bg-red-50 text-red-500">
                     <MdDelete size={14}/>
                   </button>
+                  {/* Type changed from <select> to <input type="text"> */}
                   <Field label="Type">
-                    <select value={n.type} onChange={e => updNearby(i,"type",e.target.value)} className={CLS.select}>
-                      {NEARBY_TYPES.map(t => <option key={t}>{t}</option>)}
-                    </select>
+                    <input value={n.type} onChange={e => updNearby(i, "type", e.target.value)}
+                      placeholder="Metro, Hospital, School…" className={inp}/>
                   </Field>
                   <Field label="Name" cls="sm:col-span-2">
                     <input value={n.name} onChange={e => updNearby(i,"name",e.target.value)}
@@ -618,7 +625,7 @@ const save = async () => {
             </div>
           )}
 
-          {/* Map Location Section */}
+          {/* ── Map Location ── */}
           {activeTab === "location" && (
             <div>
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#EDE5DD]">
@@ -626,14 +633,14 @@ const save = async () => {
                   <MdMap size={18} className="text-[#6B3A1F]" />
                   <h3 className="font-display font-bold text-lg text-[#1C0F05]">Map Location</h3>
                 </div>
-                <button 
+                <button
                   type="button"
                   onClick={getCurrentLocation}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 transition-colors">
                   <MdLocationOn size={14}/> Get Current Location
                 </button>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <Field label="Latitude">
                   <input type="number" step="any" value={form.mapLat}
@@ -655,7 +662,7 @@ const save = async () => {
                       📍 {form.mapLat}, {form.mapLng}
                     </p>
                   </div>
-                  <a 
+                  <a
                     href={`https://www.google.com/maps?q=${form.mapLat},${form.mapLng}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -667,7 +674,7 @@ const save = async () => {
             </div>
           )}
 
-          {/* SEO Section */}
+          {/* ── SEO ── */}
           {activeTab === "seo" && (
             <div>
               <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#EDE5DD]">

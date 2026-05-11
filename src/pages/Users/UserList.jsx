@@ -37,7 +37,7 @@ export default function UserList() {
       const data = await fetchUsers();  
       const usersArray = data.users || data || [];
       setUsers(usersArray);
-      console.log('user', usersArray)
+     
     } catch (error) {
       console.error("Error loading users:", error);
       alert("Failed to load users");

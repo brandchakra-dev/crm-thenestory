@@ -28,9 +28,6 @@ export default function Login() {
           return;
         }
         setUser(user);
-
-        console.log('ue',res)
-
         const role = user.role;
 
         if (role === "superadmin") nav("/");

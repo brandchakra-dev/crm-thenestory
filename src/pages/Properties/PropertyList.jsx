@@ -25,6 +25,12 @@ const LISTING_TYPE_OPTIONS = [
   { value: "lease", label: "For Lease" },
 ];
 
+const ACTIVE_FILTER_OPTIONS = [
+  { value: "all", label: "All", icon: null },
+  { value: "active", label: "Active", icon: <MdCheckCircle size={12} /> },
+  { value: "inactive", label: "Inactive", icon: <MdCancel size={12} /> },
+];
+
 const getListingBadge = (type) => {
   switch(type) {
     case "sale": return CLS.badgeGreen;
@@ -55,6 +61,7 @@ export default function PropertiesList() {
   const [showFilters, setShowFilters] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [listingTypeFilter, setListingTypeFilter] = useState("");
+  const [activeFilter, setActiveFilter] = useState("active"); // ✅ Default "active"
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -73,6 +80,8 @@ export default function PropertiesList() {
       if (search) params.search = search;
       if (categoryFilter) params.category = categoryFilter;
       if (listingTypeFilter) params.listingType = listingTypeFilter;
+      if (activeFilter === "active") params.isActive = true;
+      if (activeFilter === "inactive") params.isActive = false;
       
       const response = await propertiesApi.list(params);
       
@@ -90,7 +99,7 @@ export default function PropertiesList() {
     } finally {
       setLoading(false);
     }
-  }, [search, categoryFilter, listingTypeFilter, currentPage, itemsPerPage]);
+  }, [search, categoryFilter, listingTypeFilter, activeFilter, currentPage, itemsPerPage]);
 
   useEffect(() => {
     loadProperties();
@@ -98,7 +107,7 @@ export default function PropertiesList() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, categoryFilter, listingTypeFilter]);
+  }, [search, categoryFilter, listingTypeFilter, activeFilter]);
 
   const toggleFeatured = async (id) => {
     try { 
@@ -125,11 +134,12 @@ export default function PropertiesList() {
     setSearch("");
     setCategoryFilter("");
     setListingTypeFilter("");
+    setActiveFilter("active");
     setShowFilters(false);
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = search !== "" || categoryFilter !== "" || listingTypeFilter !== "";
+  const hasActiveFilters = search !== "" || categoryFilter !== "" || listingTypeFilter !== "" || activeFilter !== "active";
 
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -223,7 +233,7 @@ export default function PropertiesList() {
             <span className="text-sm font-medium">Filters</span>
             {hasActiveFilters && (
               <span className="w-4 h-4 rounded-full bg-amber-400 text-white text-[9px] font-bold flex items-center justify-center">
-                {(categoryFilter ? 1 : 0) + (listingTypeFilter ? 1 : 0)}
+                {(categoryFilter ? 1 : 0) + (listingTypeFilter ? 1 : 0) + (activeFilter !== "active" ? 1 : 0)}
               </span>
             )}
           </button>
@@ -239,7 +249,8 @@ export default function PropertiesList() {
 
         {showFilters && (
           <div className="mt-4 pt-4 border-t border-[#EDE5DD]">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Category Filter */}
               <div>
                 <label className="block text-[11px] font-bold text-[#A8978A] uppercase tracking-wide mb-1.5">
                   Category
@@ -259,6 +270,8 @@ export default function PropertiesList() {
                   ))}
                 </div>
               </div>
+
+              {/* Listing Type Filter */}
               <div>
                 <label className="block text-[11px] font-bold text-[#A8978A] uppercase tracking-wide mb-1.5">
                   Listing Type
@@ -273,6 +286,28 @@ export default function PropertiesList() {
                           ? "bg-[#6B3A1F] text-white shadow-md"
                           : "bg-[#FAF7F4] text-[#7A6858] hover:bg-[#EDE5DD]"
                       }`}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ✅ Active/Inactive Filter - New */}
+              <div>
+                <label className="block text-[11px] font-bold text-[#A8978A] uppercase tracking-wide mb-1.5">
+                  Active Status
+                </label>
+                <div className="flex gap-2">
+                  {ACTIVE_FILTER_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setActiveFilter(opt.value)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        activeFilter === opt.value
+                          ? "bg-[#6B3A1F] text-white shadow-md"
+                          : "bg-[#FAF7F4] text-[#7A6858] hover:bg-[#EDE5DD]"
+                      }`}>
+                      {opt.icon}
                       {opt.label}
                     </button>
                   ))}
@@ -310,7 +345,7 @@ export default function PropertiesList() {
                 <th className="px-4 py-3 font-semibold">Location</th>
                 <th className="px-4 py-3 font-semibold text-center">Featured</th>
                 <th className="px-4 py-3 font-semibold text-right">Actions</th>
-               </tr>
+              </tr>
             </thead>
             <tbody>
               {loading ? (
@@ -320,7 +355,7 @@ export default function PropertiesList() {
                       <div className="w-8 h-8 rounded-full border-2 border-[#6B3A1F] border-t-transparent animate-spin" />
                     </div>
                     <p className="text-sm text-gray-400 mt-3">Loading properties...</p>
-                  </td>
+                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
@@ -332,7 +367,7 @@ export default function PropertiesList() {
                     <p className="text-sm text-gray-400">
                       {hasActiveFilters ? "Try adjusting your filters" : "Click 'Add Property' to get started"}
                     </p>
-                  </td>
+                   </td>
                 </tr>
               ) : (
                 rows.map((d) => (
@@ -365,18 +400,18 @@ export default function PropertiesList() {
                           <p className="text-xs text-gray-400">{d.owner || "No owner"}</p>
                         </div>
                       </div>
-                    </td>
+                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
                         <span className="text-xs font-medium capitalize">{d.category}</span>
                         <span className="text-[10px] text-gray-400 capitalize">{d.subCategory}</span>
                       </div>
-                    </td>
+                     </td>
                     <td className="px-4 py-3">
                       <span className={getListingBadge(d.listingType)}>
                         {getListingLabel(d.listingType)}
                       </span>
-                    </td>
+                     </td>
                     <td className="px-4 py-3">
                       <div>
                         <span className="text-xs font-semibold text-gray-800">
@@ -386,16 +421,16 @@ export default function PropertiesList() {
                           <p className="text-[9px] text-gray-400">Deposit: {formatPrice(d.securityDeposit, "rent")}</p>
                         )}
                       </div>
-                    </td>
+                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs text-gray-600">{d.bedrooms} BHK</span>
-                    </td>
+                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs text-gray-600">{d.area} {d.areaUnit}</span>
-                    </td>
+                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs text-gray-600 truncate max-w-[150px] block">{d.location}</span>
-                    </td>
+                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleFeatured(d._id); }}
@@ -406,7 +441,7 @@ export default function PropertiesList() {
                         }`}>
                         {d.isFeatured ? <MdStar size={16} /> : <MdStarBorder size={16} />}
                       </button>
-                    </td>
+                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <button
@@ -431,12 +466,12 @@ export default function PropertiesList() {
                           <MdDelete size={16} />
                         </button>
                       </div>
-                    </td>
+                     </td>
                   </tr>
                 ))
               )}
             </tbody>
-          </table>
+           </table>
         </div>
       </div>
 
@@ -493,5 +528,5 @@ export default function PropertiesList() {
         />
       )}
     </div>
-  );
+    );
 }

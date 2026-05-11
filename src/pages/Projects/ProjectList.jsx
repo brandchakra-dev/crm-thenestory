@@ -22,8 +22,9 @@ export default function ProjectList() {
   const [delTitle, setDelTitle] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("active"); // ✅ Default "active"
   
-  // ✅ Pagination State
+  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -39,6 +40,8 @@ export default function ProjectList() {
       };
       if (search) params.search = search;
       if (statusFilter !== "all") params.status = statusFilter;
+      if (activeFilter === "active") params.isActive = true;
+      if (activeFilter === "inactive") params.isActive = false;
       
       const response = await projectsApi.list(params);
       
@@ -56,7 +59,7 @@ export default function ProjectList() {
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, currentPage, itemsPerPage]);
+  }, [search, statusFilter, activeFilter, currentPage, itemsPerPage]);
 
   // Initial load & filter changes
   useEffect(() => {
@@ -66,7 +69,7 @@ export default function ProjectList() {
   // Reset page when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, statusFilter]);
+  }, [search, statusFilter, activeFilter]);
 
   const toggleFeatured = async (id) => {
     try { 
@@ -92,11 +95,12 @@ export default function ProjectList() {
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("all");
+    setActiveFilter("active");
     setShowFilters(false);
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = search !== "" || statusFilter !== "all";
+  const hasActiveFilters = search !== "" || statusFilter !== "all" || activeFilter !== "active";
 
   // Pagination handlers
   const goToPage = (page) => {
@@ -182,7 +186,7 @@ export default function ProjectList() {
             <span className="text-sm font-medium">Filters</span>
             {hasActiveFilters && (
               <span className="w-4 h-4 rounded-full bg-amber-400 text-white text-[9px] font-bold flex items-center justify-center">
-                {statusFilter !== "all" ? 1 : 0}
+                {(statusFilter !== "all" ? 1 : 0) + (activeFilter !== "active" ? 1 : 0)}
               </span>
             )}
           </button>
@@ -198,12 +202,13 @@ export default function ProjectList() {
 
         {showFilters && (
           <div className="mt-4 pt-4 border-t border-[#EDE5DD]">
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Status Filter */}
               <div>
                 <label className="block text-[11px] font-bold text-[#A8978A] uppercase tracking-wide mb-1.5">
-                  Status
+                  Project Status
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {[
                     { value: "all", label: "All", icon: null },
                     { value: "New Launch", label: "New Launch", icon: null },
@@ -212,10 +217,35 @@ export default function ProjectList() {
                     { value: "Upcoming", label: "Upcoming", icon: null },
                   ].map(opt => (
                     <button
-                      key={opt.value || "all"}
+                      key={opt.value}
                       onClick={() => setStatusFilter(opt.value)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                         statusFilter === opt.value
+                          ? "bg-[#6B3A1F] text-white shadow-md"
+                          : "bg-[#FAF7F4] text-[#7A6858] hover:bg-[#EDE5DD]"
+                      }`}>
+                      {opt.icon}
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ✅ Active/Inactive Filter - New */}
+              <div>
+                <label className="block text-[11px] font-bold text-[#A8978A] uppercase tracking-wide mb-1.5">
+                  Active Status
+                </label>
+                <div className="flex gap-2">
+                  {[
+                    { value: "active", label: "Active", icon: <MdCheckCircle size={12} /> },
+                    { value: "inactive", label: "Inactive", icon: <MdCancel size={12} /> },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setActiveFilter(opt.value)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        activeFilter === opt.value
                           ? "bg-[#6B3A1F] text-white shadow-md"
                           : "bg-[#FAF7F4] text-[#7A6858] hover:bg-[#EDE5DD]"
                       }`}>
@@ -278,8 +308,8 @@ export default function ProjectList() {
                       <div className="w-8 h-8 rounded-full border-2 border-[#6B3A1F] border-t-transparent animate-spin" />
                     </div>
                     <p className="text-sm text-gray-400 mt-3">Loading projects...</p>
-                  </td>
-                </tr>
+                   </td>
+                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="text-center py-12">
@@ -295,8 +325,8 @@ export default function ProjectList() {
                         Clear all filters
                       </button>
                     )}
-                  </td>
-                </tr>
+                   </td>
+                 </tr>
               ) : (
                 rows.map((d) => (
                   <tr 
@@ -328,21 +358,21 @@ export default function ProjectList() {
                           <p className="text-xs text-gray-400">by {d.builder?.name || "—"}</p>
                         </div>
                       </div>
-                    </td>
+                     </td>
                     <td className="px-4 py-3">
                       <span className={statusBadge(d.status)}>{d.status}</span>
-                    </td>
+                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs text-gray-600">{d.city?.name || "—"}</span>
-                    </td>
+                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs font-semibold text-gray-800">
                         {d.priceLabel || (d.priceMin ? `₹${d.priceMin} Cr` : "—")}
                       </span>
-                    </td>
+                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs text-gray-500">{d.propertyType || "—"}</span>
-                    </td>
+                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleFeatured(d._id); }}
@@ -353,10 +383,10 @@ export default function ProjectList() {
                         }`}>
                         {d.isFeatured ? <MdStar size={16} /> : <MdStarBorder size={16} />}
                       </button>
-                    </td>
+                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs">
                       {new Date(d.createdAt).toLocaleDateString()}
-                    </td>
+                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <button
@@ -381,16 +411,16 @@ export default function ProjectList() {
                           <MdDelete size={16} />
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                     </td>
+                   </tr>
                 ))
               )}
             </tbody>
-          </table>
+           </table>
         </div>
       </div>
 
-      {/* ✅ Pagination */}
+      {/* Pagination */}
       {!loading && totalPages > 1 && (
         <div className="flex items-center justify-between gap-4 pt-2">
           <p className="text-sm text-[#A8978A] hidden sm:block">
