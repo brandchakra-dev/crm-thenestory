@@ -1,4 +1,3 @@
-// src/utils/url.js  (ek baar banao, sab jagah use karo)
 const API_BASE = import.meta.env.MODE === "production"
   ? "https://webapi.thenestory.in"
   : "http://localhost:5000";

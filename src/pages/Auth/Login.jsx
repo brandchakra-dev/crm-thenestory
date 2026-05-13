@@ -5,13 +5,13 @@ import AuthContext from "../../context/AuthContext";
 import { FaEye, FaEyeSlash, FaLock, FaEnvelope } from "react-icons/fa";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email,        setEmail]        = useState("");
+  const [password,     setPassword]     = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState("");
 
-  const {setUser } = useContext(AuthContext);
+  const { setUser } = useContext(AuthContext);
   const nav = useNavigate();
 
   const submit = async (e) => {
@@ -21,20 +21,29 @@ export default function Login() {
 
     try {
       const res = await axios.post("/auth/login", { email, password });
-      const user = res.data?.user;
 
-        if (!user) {
-          setError("Login failed. Please try again.");
-          return;
-        }
-        setUser(user);
-        const role = user.role;
+      const user         = res.data?.user;
+      const accessToken  = res.data?.token;
+      const refreshToken = res.data?.refreshToken;
 
-        if (role === "superadmin") nav("/");
-        else if (role === "admin") nav("/admin/dashboard");
-        else if (role === "manager") nav("/manager/dashboard");
-        else if (role === "executive") nav("/executive/dashboard");
-        else nav("/");
+      if (!user || !accessToken) {
+        setError("Login failed. Please try again.");
+        return;
+      }
+
+      // ✅ Dono tokens localStorage mein save karo
+      localStorage.setItem("accessToken",  accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+
+      setUser(user);
+
+      // Role based redirect
+      const role = user.role;
+      if      (role === "superadmin") nav("/");
+      else if (role === "admin")      nav("/admin/dashboard");
+      else if (role === "manager")    nav("/manager/dashboard");
+      else if (role === "executive")  nav("/executive/dashboard");
+      else                            nav("/");
 
     } catch (err) {
       setError(err.response?.data?.message || "Invalid email or password");
@@ -43,7 +52,6 @@ export default function Login() {
     }
   };
 
-  
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-800 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
@@ -104,17 +112,20 @@ export default function Login() {
 
           {/* Submit */}
           <button
+            type="submit"
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
+
         </form>
 
         {/* Footer */}
         <div className="text-center mt-6 text-sm text-gray-500">
           © {new Date().getFullYear()} The Nestory LLP
         </div>
+
       </div>
     </div>
   );
