@@ -48,6 +48,8 @@ import VideoCreate from '../pages/Video/VideoCreate';
 import VideoEdit from '../pages/Video/VideoEdit';
 import VideoShow from '../pages/Video/VideoShow';
 
+import ConsultationList from '../pages/Consultations/ConsultationList';
+
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
@@ -299,6 +301,12 @@ export default function AuthRoutes() {
       <Route path="/videos/:id" element={
         <RoleRoute roles={NestoryRoles}>
           <Layout><VideoShow /></Layout>
+        </RoleRoute>
+      }/>
+
+      <Route path="/consultations" element={
+        <RoleRoute roles={NestoryRoles}>
+          <Layout><ConsultationList /></Layout>
         </RoleRoute>
       }/>
 

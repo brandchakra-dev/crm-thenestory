@@ -168,6 +168,10 @@ export default function Sidebar() {
         { divider: true, label: "Blogs" },
         { to: "/blogs",     label: "All Blogs", icon: Ic.list },
         { to: "/blogs/add", label: "New Blog",  icon: Ic.add,  roles: ["superadmin","admin","manager"] },
+
+        // Consultations
+        { divider: true, label: "Consultations" },
+        { to: "/consultations", label: "All Consultations", icon: Ic.list },
       ],
     },
   ];
